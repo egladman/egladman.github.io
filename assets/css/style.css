@@ -1,0 +1,215 @@
+:root {
+    --accent-color: #af5ebf;
+    --accent-line-weight: 0.35em;
+    --wrapper-background-color: #fff;
+    --navbar-text-color: #6b6b6b;
+    --body-text-color: #313131;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    color: var(--body-text-color);
+    background: var(--wrapper-background-color);
+}
+
+body a {
+    color: #68aff1;
+}
+
+body a:visited {
+    color: var(--accent-color);
+}
+
+
+.container {
+    margin: 0 2em 0 2em;
+    padding: 3em 0 3em 0;
+}
+
+.center-child {
+    display: flex!important;
+    justify-content: center;
+    align-items: center;
+}
+
+.hug-top {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.hug-bottom {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+main.wrapper {
+    border-top: var(--accent-line-weight) solid var(--accent-color);
+}
+
+.github-corner {
+    fill: var(--accent-color);
+    position: absolute;
+    top: calc(var(--accent-line-weight) * -1 );
+    border: 0;
+    right:0;
+    z-index: 99;
+}
+
+.github-corner,
+.github-corner:hover,
+.github-corner svg {
+    color: var(--wrapper-background-color);
+}
+
+.navbar {
+    height: 4em;
+    transition: 0.5s ease;
+    color: var(--navbar-text-color);
+    margin-bottom: 4em;
+}
+
+.navbar ul {
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    float: right;
+    margin-right: 6.5em;
+}
+
+.navbar ul>li {
+    list-style: none;
+    display: inline-block;
+    padding: 0.5em;
+    line-height: 3em;
+    margin-right: 1em;
+    transition: 0.5s ease;
+    text-transform: uppercase;
+}
+
+.navbar ul>li a {
+    text-decoration: none;
+    color: inherit;
+    font-size: 1.25em;
+}
+
+.navbar ul>li a:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--navbar-text-color)
+}
+
+.hero img {
+    border-radius: 50em;
+    max-width: 12em;
+    margin: 0 auto;
+    border: 1em solid #f7f7f7;
+}
+
+span.badge {
+    padding: 0.25em .75em;
+    border-radius: .15em;
+    color: #fff;
+}
+
+.badge.badge-yellow {
+    background: #ffca58;
+}
+
+.badge.badge-blue {
+    background: #68aff1;
+}
+
+.hero p {
+    text-align: center;
+    font-size: 1.5em;
+    max-width: 600px;
+}
+
+.hero a:not(:hover) {
+    text-decoration: none;
+}
+
+.social {
+    color: red;
+    list-style: none;
+    padding: 0;
+    font-size: 1.75em;
+}
+
+.social li {
+    vertical-align: top;
+    display: inline;
+}
+
+.social a {
+    text-decoration: none;
+    color: var(--body-text-color);
+}
+
+.fa {
+    color: var(--navbar-text-color);
+    -o-transition:.6s;
+    -ms-transition:.6s;
+    -moz-transition:.6s;
+    -webkit-transition:.6s;
+    transition: .6s;
+}
+
+.fa:hover {
+    color: var(--wrapper-background-color);
+    transition: .2s;
+}
+
+.fa-twitter {
+    padding:10px 12px;
+}
+
+.fa-twitter:hover {
+    background: #00aced;
+}
+
+.fa-linkedin {
+    padding:10px 14px;
+}
+
+.fa-linkedin:hover {
+    background: #0073a4;
+}
+
+.fa-github {
+    padding:10px 14px;
+}
+
+.fa-github:hover {
+    background: #171616;
+}
+
+@media (max-width: 700px) {
+    .navbar {
+        text-align: center;
+        margin-bottom: 0;
+    }
+    .navbar ul {
+        float: none;
+        margin: 0;
+    }
+    .navbar ul>li {
+        margin-right: 4em;
+        margin-top: 1em;
+    }
+
+    .navbar ul>li a {
+        font-size: 1.5em;
+    }
+
+    .navbar ul>li:last-child {
+        margin-right: 0;
+    }
+
+    .hero p {
+        font-size: 1.25em;
+    }
+
+    .social {
+        font-size: 2.25em;
+    }
+}
