@@ -5,11 +5,24 @@ Nothing fancy. Just works.
 ### Dependencies
 
 - [crunchwrap](https://github.com/egladman/crunchwrap)
+- [bashmon](https://github.com/egladman/bashmon)
 
 ### Build
 
+Auto-update
+```
+./run.sh
+```
+
+Manual
 ```
 ./build.sh
+```
+
+### Deploy
+
+```
+./deploy.sh
 ```
 
 ### Other
