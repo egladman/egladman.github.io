@@ -24,7 +24,7 @@ _build() {
 
 [[ ! -d "${build_dir}" ]] && mkdir "${build_dir}"
 
-cp -r assets "${build_dir}"/assets
+cp -r assets "${build_dir}"
 cp -r downloads "${build_dir}"/downloads
 
 # When we 'source' our config file we're setting new variables. So as a precaution
