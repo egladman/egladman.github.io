@@ -1,12 +1,14 @@
 #!/bin/bash -e
 
+readonly build_dir="site"
+
 _build() {
     local source="${1}" # # The template typically ends with *.cw
     local destination="${2}"
     local configuration="${3}"
 
     if [[ -z "${configuration}" ]]; then
-        configuration="crunchwrap.config"
+        configuration="crunchwrap.conf"
     fi
 
     # > man bash
@@ -20,6 +22,11 @@ _build() {
     cat "${source}" | cw | tee "${destination}"
 }
 
+[[ ! -d "${build_dir}" ]] && mkdir "${build_dir}"
+
+cp -r assets "${build_dir}"/assets
+cp -r downloads "${build_dir}"/downloads
+
 # When we 'source' our config file we're setting new variables. So as a precaution
 # we start in an empty environemnt for we don't have to worry about name collisons
-env --ignore-environment "$(_build index.html.cw index.html)"
+env --ignore-environment "$(_build index.html.cw ${build_dir}/index.html)"
