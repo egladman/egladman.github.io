@@ -1,34 +1,28 @@
-# My Personal Site
+# My Personal Blog
 
-Nothing fancy. Just works.
+Classless CSS. No Javascript. Written in Bash.
 
 ### Dependencies
 
-- [crunchwrap](https://github.com/egladman/crunchwrap)
-- [bashmon](https://github.com/egladman/bashmon)
+- [squib](https://github.com/egladman/squib)
+- [Markdown](https://github.com/bobtfish/text-markdown) - Install via `cpan` or with your system package manager. (i.e. `dnf install perl-Text-Markdown`)
 
 ### Build
 
-Auto-update
 ```
-./run.sh
-```
-
-Manual
-```
-./build.sh
+squib build
 ```
 
 ### Deploy
 
 ```
-./deploy.sh
+./deploy.sh "eli.gladman.cc"
 ```
 
-### Other
+### License
 
-Image compression (ImageMagick)
+The following directories are copyright Eli Gladman. You may not reuse anything therein without permission:
+- `posts/`
+- `public/img/`
 
-```
-convert profile.jpg -quality 50 -resize 1000x1000 profile_compressed.jpg
-```
+All other directories are licensed under The Unlicense.

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+    {{@ includes/head.html }}
+    <body>
+
+        <section>
+            {{@ includes/navbar.html }}
+            <article>
+                <h1>{{ __title__ }}</h1>
+                <p>Published: {{ __date__ }}</p>
+                {{ __content__ }}
+                <p>Tags: {{ __tags__ }}</p>
+            </article>
+            {{@ includes/footer.html }}
+        </section>
+
+    </body>
+</html>
