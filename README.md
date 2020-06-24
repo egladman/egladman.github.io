@@ -19,6 +19,16 @@ squib build
 ./deploy.sh "eli.gladman.cc"
 ```
 
+### Misc
+
+#### Image Compression
+
+```
+mogrify -strip -interlace Plane -gaussian-blur 0.05 -quality 85% *.jpg
+```
+
+
+
 ### License
 
 The following directories are copyright Eli Gladman. You may not reuse anything therein without permission:
