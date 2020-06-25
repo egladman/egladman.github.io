@@ -5,9 +5,9 @@ tags="bash"
 ---
 While working on my static site generator [squib](https://github.com/egladman/squib), I decided to transition the configuration file to a `.ini`. The rational being that I needed a simple format that could easily be parsed with minimal effort. Squib is written 100% in Bash, so I wanted a solution that didn't require additional dependencies.
 
-Prior to this I'd sourced a shell script that exclusively contained variables. It worked relatively well until I needed variables with multi-line values. It became messy as I resorted to using a combination of heredocs and `cat`.
+Prior to this I'd source a shell script that exclusively contained variables. It worked relatively well until I needed variables with multi-line values. It became messy as I resorted to using a combination of heredocs and `cat`.
 
-The solution below uses only Bash's builtins. It's rough around the edges and doesn't fully comply with the INI spec, but it does exactly what I need it to. If you have any feedback please comment in the [gist](https://gist.github.com/egladman/e2f3b0ee391cba1c7deb12452799327e).
+The solution below uses only Bash builtins. It's rough around the edges and doesn't fully comply with the INI spec, but it does exactly what I need it to. If you have any feedback please comment in the [gist](https://gist.github.com/egladman/e2f3b0ee391cba1c7deb12452799327e).
 
 ### The Code
 
