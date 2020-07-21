@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+	<meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Eli Gladman">
+	<meta name="description" content="Personal website for Eli Gladman">
+
+  <title>Raspberry Pi 24-bit RGB Video on the Cheap - Part One</title>
+
+  <link rel="icon" type="image/x-icon" href="/img/favicons/favicon.ico" sizes="16x16 24x24 32x32 48x48 64x64">
+	<link rel="mask-icon" href="/img/favicons/safari-pinned-tab.svg" color="#0078d7">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-57.png" sizes="57x57">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-60.png" sizes="60x60">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-72.png" sizes="72x72">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-76.png" sizes="76x76">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-114.png" sizes="114x114">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-120.png" sizes="120x120">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-144.png" sizes="144x144">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-152.png" sizes="152x152">
+	<link rel="apple-touch-icon-precomposed" href="/img/favicons/favicon-180.png" sizes="180x180">
+	<meta name="msapplication-TileColor" content="#0078d7">
+	<meta name="msapplication-TileImage" content="/img/favicons/favicon-144.png">
+	<meta name="application-name" content="Eli ">
+	<meta name="msapplication-tooltip" content="personal website">
+	<meta name="msapplication-config" content="/img/favicons/ieconfig.xml">
+	<link rel="icon" type="image/png" href="/img/favicons/favicon-32.png" sizes="32x32">
+	<link rel="icon" type="image/png" href="/img/favicons/favicon-96.png" sizes="96x96">
+	<link rel="icon" type="image/png" href="/img/favicons/favicon-128.png" sizes="128x128">
+	<link rel="icon" type="image/png" href="/img/favicons/favicon-195.png" sizes="195x195">
+	<link rel="icon" type="image/png" href="/img/favicons/favicon-196.png" sizes="196x196">
+	<link rel="icon" type="image/png" href="/img/favicons/favicon-228.png" sizes="228x228">
+
+  <link rel="stylesheet" href="/css/vendor/tacit-css.min.css">
+  <link rel="stylesheet" href="/css/dist/style.css">
+</head>
+    <body>
+
+        <section>
+            <nav>
+    <ul>
+      <li><a href="/">Home</a></li>
+	    <li><a href="/blog">Blog</a></li>
+      <li><a href="https://github.com/egladman">Github</a></li>
+      <li><a href="/downloads/eli_gladman_resume.pdf">Resume</a></li>
+    </ul>
+</nav>
+            <article>
+                <h1>Raspberry Pi 24-bit RGB Video on the Cheap - Part One</h1>
+                <p>Published: July 21, 2020</p>
+                <p>Recently I've become rather nostalgic for the 16-bit era. Some of my fondest memories were playing beat ‘em up games on the Sega Genesis. There’s so many great ways to play your childhood games these days whether it’s via original hardware, FPGA hardware, or software emulation. I’m currently working on modding a non-consumer CRT to accept RGB input (blog post to come), so I wanted a RGB compatible solution. As I’m primarily focused on playing the Sega Genesis, it will be the main topic of discussion.</p>
+
+<h2>Ways to Play</h2>
+
+<h3>Original Hardware</h3>
+
+<p>Original hardware sounds like the obvious choice as it natively supports RGB output, however it’s not without its flaws. Some hardware revisions of the sega genesis have inferior sound. The community has since created <a href="https://www.retrorgb.com/genesistriplebypass.html">the triple bypass</a> mod to address the hardware shortcomings.</p>
+
+<p>A used Genesis can be found on the cheap, however once you factor in the cost of the <a href="https://insurrectionindustries.com/product/genesis_triple_bypass_v2/">triple by pass</a> mod (assuming you install it yourself), high quality video cables, and your favorite game the cost skyrockets.</p>
+
+<h3>Emulation</h3>
+
+<p>Emulation has by far the lowest barrier of entry. All you really need is a PC and a gamepad. You’re sacrificing a cycle-accurate experience in favor of convenience. The Genesis' sound has a reputation for being difficult to replicate correctly. The quality of emulation obviously varies across emulators. Projects like <a href="http://junkerhq.net/MDFourier/">MDFourier</a> aim to quantify these audio discrepancies, however I don’t have any firsthand experience with the project.</p>
+
+<h3>FPGA Hardware</h3>
+
+<p>FPGA based solutions are a fantastic alternative to original hardware. When allotted enough time, developers can create a cycle-accurate experience. It take an excruciatingly long time to reverse engineer SoCs, but the results speak for themselves. FPGAs are a viable solution for 8/16-bit consoles, but they fall flat for newer consoles with complex architectures. FPGAs with sufficent CLBs (configurable logic blocks) capable of replicating a 32-bit or 64-bit SoC exist, however their priced considerably outside the consumer market. As technology progresses prices will inevitably fall. Long term I think FPGA based solutions will be crucial for video game preservation as original hardware begins to fail.</p>
+
+<p>For less complicated systems from the 8/16-bit era it's pretty flushed out from my understanding. Off the top of my head there are two FPGA based solutions that offer genesis/megadrive compatibility:</p>
+
+<h4>The Mega Sg from Analogue</h4>
+
+<p>The Mega Sg is marketed as a premium plug ‘n play console. Since it only outputs video via HDMI I won’t explore this option any further. Yes, there exist devices to downscale inputs to 240p, however they add lag and therefore aren't practical.</p>
+
+<h4>MiSTer</h4>
+
+<p>The MiSTer is an all in one solution that allows you to play multiple classic consoles. It's no where near as polished as any of Analogue's offerings, however this is excusable since it’s under heavy development. In its current state it’s geared towards developers, as it requires tinkering. It natively supports analog and digital outputs. I don't follow the project closely, so checkout their <a href="https://github.com/MiSTer-devel/Main_MiSTer/wiki">Github</a> for the most up-to-date info.</p>
+
+<h2>My Decision</h2>
+
+<p>After much deliberation I opted for emulation. FPGA based solutions are too pricey for my blood, and I don't have the patience for original hardware. I have no less than 10 Raspberry Pis floating around my office, given my last job entailed developing a custom linux distribution for the SBC (single board computer). I already had a gamepad so all I needed was a way to output RGB from the Pi.</p>
+
+<p>I quickly found the following offerings:</p>
+
+<h4>vga666</h4>
+
+<p>Pros:</p>
+
+<ul>
+<li>Opensource</li>
+<li>Price</li>
+</ul>
+
+<p>Cons:</p>
+
+<ul>
+<li>16-bit video</li>
+<li>R-2R DAC. Color quality greatly depends on the tolerance of resistors.</li>
+</ul>
+
+<h4>vga666rgbs</h4>
+
+<p>This peeked my interest in the beginning, however the more I read about the less impressed I was. A fork of vga666, the vga666rgbs is a heavily flawed product. It's in violation of the GPLv3 license stipulated in <a href="https://github.com/fenlogic/vga666/blob/master/LICENCE.txt">vga666</a>. Most will probably dismiss my concerns, but as an open source developer this really gets under my skin.</p>
+
+<p>One of the features that it touts is a sync combiner circuit for RGBs output. This addition baffles me since the Raspberry Pi <strong>natively</strong> supports csync. See <code>DPI_OUTPUT_ENABLE_MODE_COMBINED_SYNCS</code> in the <a href="https://www.raspberrypi.org/documentation/hardware/raspberrypi/dpi/README.md">Parallel Display Interface docs</a>. If I'm way off base I would love for someone to tell me. Is there a reason for it's addition? </p>
+
+<p>Pros:</p>
+
+<ul>
+<li>RGBs via RCA connectors (I don't have to build/purchase any more connectors)</li>
+</ul>
+
+<p>Cons:</p>
+
+<ul>
+<li>GPL Violation</li>
+<li>16-bit video</li>
+<li>Price</li>
+<li>R-2R DAC. Color quality greatly depends on the tolerance of resistors.</li>
+</ul>
+
+<h4>RetroTINK Ultimate</h4>
+
+<p>Pros:</p>
+
+<ul>
+<li>24-bit video</li>
+<li><a href="https://www.retrotink.com/post/retrotink-ultimate-open-source">Gerbers available</a> as of Mar 10th 2020. Mike says "open source", but that would entail the actual pcb schematics and board layout. Not complaining just clarifying.</li>
+<li>Superior DAC. I don't have one in front of me, but I presume it's a low-latency 8-bit 3 channel DAC. </li>
+<li>Robust Video Output. Composite, s-video, RGBHV (VGA), RGBs, YPbPr (Component)</li>
+</ul>
+
+<p>Cons:</p>
+
+<ul>
+<li>Price</li>
+<li>RGBs via VGA (I'd need to build/purchase a connector to accept RGBs via RCA)</li>
+</ul>
+
+<h2>Going Down the Rabbit Hole</h2>
+
+<p>After weighing all my options, I decided to design my own hat, based off Gert's work on the vga666.</p>
+
+<h3>Introducing the rgbs888</h3>
+
+<p>If I was going to go through the effort of hooking up a Pi via RGB taking advantage of the DPI's (Parallel Display Interface) entire 24-bit color depth was a no brainer. Hence I created the rgbs888, a fork of vga666 that adds 24-bit support and RGBs via RCA. The R-2R DAC is dirt cheap, while it's inherently not as precious as the RetroTINK, it's a great option for people on a budget like myself. Given it's limited features I don't view it as a replacement/competitor.</p>
+
+<p><img src="/img/post/2020/07/21/IMG_20200721_121709.jpg" alt="rgbs888 pcb" /></p>
+
+<p>To be quite frank, <a href="https://github.com/fenlogic/vga666/commits/master">Gert</a> laid all the <a href="https://github.com/fenlogic/vga666/blob/master/documents/vga_manual.pdf">groundwork</a>, all I had to do was recalculate some values and layout the board. </p>
+
+<p><img src="/img/post/2020/07/21/rgbs888_kicad_pcb_project.png" alt="rgbs888 board layout" /></p>
+
+<h3>Here's How I Did It</h3>
+
+<p>Each color (red, green, and blue) is represented in 6-bits hence the '666' in the name. 
+For 24-bit color depth we must connect the remaining 6 gpio pins documented below, two for each color.</p>
+
+<p><!-- From https://www.raspberrypi.org/documentation/hardware/raspberrypi/dpi/README.md -->
+<img src="/img/post/2020/07/21/dpi-packing.png" alt="DPI Pinout" /></p>
+
+<p>We must then recalculate the value of each resistor using some math. Find <code>x</code> where <code>r=278</code></p>
+
+<pre><code>1/r = 1/x  +  1/2x + 1/4x + 1/8x + 1/16x + 1/32x + 1/64x + 1/128x
+</code></pre>
+
+<p>When simplified it becomes</p>
+
+<pre><code>x/35445 = 1/64
+</code></pre>
+
+<p>Cross multiply and divide</p>
+
+<pre><code>x=35445/64
+</code></pre>
+
+<p><code>x</code> equals <code>553.83ohms</code></p>
+
+<p>There is no off-the-shelf resistor with that value. however <code>549ohms</code> is readily available. A <code>549ohms</code> resistor with a 1% tolerance gets us pretty darn close. Worse case scenario we're out of spec by about 2% or <code>11ohms</code>. I find that pretty acceptable considering the entire resistor ladder is less than $3USD.</p>
+
+<p>When all is said and done we get the following:</p>
+
+<pre><code>549 ohms
+1.1K ohms
+2.21K ohms
+4.42K ohms
+8.87K ohms
+17.8K ohms
+35.7K ohms
+71.5K ohms
+</code></pre>
+
+<p><img src="/img/post/2020/07/21/rgbs888_kicad_schematic.png" alt="rgbs888 schematic" /></p>
+
+<p>For an overiew on how resistor ladders work checkout <a href="https://www.tek.com/blog/tutorial-digital-analog-conversion-r-2r-dac">this tutorial by tektronix</a>. I found it helpful.</p>
+
+<p>The <a href="https://github.com/egladman/rgbs888">source code for the rgbs888 can be found here</a>. Once I have the board populated, and running on the Pi I'll make a follow up post.
+I had a lot fun with the project and I'm eager to do bigger and better things. This was one of my first times working with analog signals.</p>
+                <p>Tags: hardware raspberry-pi pcb</p>
+            </article>
+            <footer>
+  <nav>
+    <ul>
+      <li><small>This site was written in Bash 🤘 <a href="https://github.com/egladman/egladman.github.io">source code</a></small></li>
+      <li><small>eli.gladman.cc</small></li>
+    </ul>
+  </nav>
+</footer>
+        </section>
+
+    </body>
+</html>
