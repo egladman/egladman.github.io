@@ -54,6 +54,10 @@ article>section>ul:only-child span::after {
 }
 
 @media all and (max-width: 767px) {
+    nav + article>h1:first-child {
+        margin-top: 36px; /* 1/2 of the tacit default */
+    }
+
     article>section>ul:only-child a {
         display: inline-block;
         margin-bottom: 1.25em;
