@@ -10,6 +10,16 @@ article {
     border: none;
 }
 
+output {
+    display: block;
+    font-family: monospace;
+    white-space: pre;
+    margin: 1em 0px;
+    line-height: 25.2px;
+    overflow: auto;
+    padding-left: 18px;
+}
+
 /*  The vertical spacing of lists always looked off to me. So I'm overriding the defaults of tacit*/
 p, ul, ol, dl {
     margin-bottom: 21px; /* 2/3 of the tacit default */
