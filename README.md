@@ -24,7 +24,7 @@ squib build
 #### Image Compression
 
 ```
-mogrify -strip -interlace Plane -gaussian-blur 0.05 -quality 85% *.jpg
+mogrify -strip -interlace Plane -sampling-factor 4:2:0 -quality 85% *.jpg
 ```
 
 
