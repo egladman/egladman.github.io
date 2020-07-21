@@ -27,7 +27,7 @@ The laser assembly lifts up effortlessly. You'll need to detach the ribbon cable
 Quade's documentation proved invaluable. You can find the full write up [here](https://quade.co/ps1-modchip-guide/mm3/pm-41/).
 
 ![Copyright William Quade](/img/post/2020/06/27/PM-41-mm3.jpg)
-We must connect the `PIC12C508` to various traces on the PSone motherboard. The soldering varies in difficulty, for a handful of connections we can "cheat" a little bit and attach the botch wires directly to the SMD components.
+We must connect the `PIC12C508` to various traces on the PSone motherboard. The soldering varies in difficulty, for a handful of connections we can "cheat" a little bit and attach the bodge wires directly to the SMD components.
 
 ![MM3 modchip](/img/post/2020/06/27/IMG_20200625_212248.jpg)
 I chose to use 32 gauge magnet wire since that's what I had layaround.
