@@ -1,0 +1,94 @@
+h1, h2, h3, h4, h5, h6 {
+    color: #404040;
+}
+
+pre code {
+    line-height: 1.5em;
+}
+
+article {
+    border: none;
+}
+
+output {
+    display: block;
+    font-family: monospace;
+    white-space: pre;
+    margin: 1em 0px;
+    line-height: 25.2px;
+    overflow: auto;
+    padding-left: 18px;
+}
+
+/*  The vertical spacing of lists always looked off to me. So I'm overriding the defaults of tacit*/
+p, ul, ol, dl {
+    margin-bottom: 21px; /* 2/3 of the tacit default */
+}
+
+ul + p {
+margin-top: 10.5px /* Add back the 1/3 we previously removed */
+}
+
+/* Hero */
+
+article>section:only-child>figure:first-child>img {
+    border-radius: 50em;
+    max-width: 12em;
+    border: 1em solid #f7f7f7;
+    margin-bottom: 4em;
+}
+
+/* Pagination */
+
+article>section>ul:only-child {
+    list-style: none;
+    display: contents;
+}
+
+article>section>ul:only-child h3 {
+    margin-bottom: 0px;
+}
+
+article>section>ul:only-child span {
+    font-size: small;
+    color: darkgrey;
+}
+
+article>section>ul:only-child span::after {
+    display: inline;
+    content: "\00bb";
+    color: #909090;
+    font-size: 1.5em;
+    padding-left: .25em;
+    padding-right: .25em;
+}
+
+@media all and (max-width: 767px) {
+    nav + article>h1:first-child {
+        margin-top: 36px; /* 1/2 of the tacit default */
+    }
+
+    article>section>ul:only-child a {
+        display: inline-block;
+        margin-bottom: 1.25em;
+        width: 100%;
+    }
+
+    /* Hide the "»" on smaller screens */
+    article>section>ul:only-child span::after {
+        display: none;
+    }
+}
+
+/* Footer */
+
+footer>nav li:last-of-type {
+    color: darkgrey;
+}
+
+footer>nav ul li {
+    display: inherit;
+    margin-left: 0;
+    margin-right: 0;
+}
+
