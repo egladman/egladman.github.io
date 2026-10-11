@@ -312,6 +312,14 @@ fun canonicalPath(path: str) > str {
     return path;
 }
 
+// promptPath is the shell-style location shown in the header: ~ for the home page, otherwise
+// ~/blog/2020/06/22/hello-world.
+fun promptPath(path: str) > str {
+    var p = canonicalPath(path);
+    if (p.endsWith("/")) { p = p.sub(0, p.len() - 1); }
+    return if (p == "") "~" else "~/" + p;
+}
+
 fun renderPage(page: Page, base: {str: str}, partials: {str: str}) > void !> any {
     final ctx: mut {str: str} = mut {};
     foreach (k in base.keys()) { ctx[k] = base[k] ?? ""; }
@@ -327,6 +335,7 @@ fun renderPage(page: Page, base: {str: str}, partials: {str: str}) > void !> any
     ctx["pager"] = page.pager;
     ctx["content"] = "";
     ctx["breadcrumb"] = page.trail;
+    ctx["prompt_path"] = promptPath(page.path);
     final blogDir = (base["pagination_url"] ?? "").sub(1) + "/";
     ctx["blog_current"] = if (page.path.startsWith(blogDir)) " aria-current=\"true\"" else "";
 
