@@ -1,0 +1,10 @@
+# BEGIN magus-generated - do not edit this section manually; written by magus v0.5.0-rc.3-42-g94d434ac0-dirty (commit 94d434ac0e0a3752b9694807838934fff547abdc, 2026-10-09T19:56:59-04:00)
+*.go diff=golang
+*.py diff=python
+*.rs diff=rust
+*.md diff=markdown
+*.ts diff=typescript
+*.tsx diff=typescript
+*.buzz diff=buzz
+_site/** merge=magus linguist-generated
+# END magus-generated
