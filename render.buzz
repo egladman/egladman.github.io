@@ -447,6 +447,16 @@ fun sortStrings(names: mut [str], newestFirst: bool) > void {
     }
 }
 
+// footnoteClasses are the only classes the Markdown renderer emits; the role attributes beside
+// them carry the same meaning, so the stylesheet selects on role and these are dropped.
+final FOOTNOTE_CLASSES = [" class=\"footnote-ref\"", " class=\"footnote-backref\"", " class=\"footnotes\""];
+
+fun dropFootnoteClasses(html: str) > str {
+    var r = html;
+    foreach (c in FOOTNOTE_CLASSES) { r = r.replace(c, ""); }
+    return r;
+}
+
 // attr reads one attribute's value out of a single HTML tag.
 fun attr(tag: str, name: str) > str {
     final key = " " + name + "=\"";
@@ -529,7 +539,7 @@ fun loadPosts(base: {str: str}, today: str) > [Post] !> any {
             author = doc.author,
             tags = doc.tags,
             path = blogPath(name, base),
-            html = figures(markdown\toHtml(doc.body), name),
+            html = figures(dropFootnoteClasses(markdown\toHtml(doc.body)), name),
             minutes = readingMinutes(doc.body),
         });
     }
@@ -630,7 +640,7 @@ export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
         var body = doc.body;
         var isTemplate = true;
         if (src.endsWith(".md")) {
-            body = figures(markdown\toHtml(body), src);
+            body = figures(dropFootnoteClasses(markdown\toHtml(body)), src);
             rel = src.sub(0, src.len() - 3) + ".html";
             isTemplate = false;
         }
