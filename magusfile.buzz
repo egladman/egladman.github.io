@@ -1,0 +1,25 @@
+import "magus";
+import "proc";
+import "render" as renderer;
+
+magus\project({
+    "sources": ["*.html", "blog/**", "_includes/**", "_layouts/**", "_posts/**", "_public/**",
+                "squib.ini", "render.buzz", "stylelint.config.mjs"],
+    "targets": {
+        "build": {"skip_cache": "reads the HEAD commit date to hold back future-dated posts, which file hashing cannot see"},
+    },
+});
+
+final OUT = "_site";
+final CONFIG = "squib.ini";
+
+export fun build(ctx: magus\Context, args: [str]) > void !> any {
+    ctx.writesFiles("_site/**");
+    renderer\build(OUT, CONFIG);
+}
+
+// lint enforces the classless stylesheet; build enforces classless markup.
+export fun lint(ctx: magus\Context, args: [str]) > void !> any {
+    ctx.readsFiles("_includes/*.css", "stylelint.config.mjs");
+    proc\exec("stylelint", ["_includes/*.css"]);
+}

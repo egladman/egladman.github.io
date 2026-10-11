@@ -1,7 +1,7 @@
 ---
-layout="_layouts/post.html"
-title="Raspberry Pi 24-bit RGB Video on the Cheap - Part One"
-tags="hardware raspberry-pi pcb"
+title: "Raspberry Pi 24-bit RGB Video on the Cheap - Part One"
+tags: [hardware, raspberry-pi, pcb]
+date: 2020-07-21
 ---
 
 Recently I've become rather nostalgic for the 16-bit era. Some of my fondest memories were playing beat ‘em up games on the Sega Genesis. There’s so many great ways to play your childhood games these days whether it’s via original hardware, FPGA hardware, or software emulation. I’m currently working on modding a non-consumer CRT to accept RGB input (blog post to come), so I wanted a RGB compatible solution. As I’m primarily focused on playing the Sega Genesis, it will be the main topic of discussion.

@@ -1,0 +1,662 @@
+// render.buzz - the site generator. magusfile.buzz calls build().
+//
+// Pages and layouts are Mustache: {{ x }} is HTML-escaped, {{{ x }}} is raw, {{> name }}
+// pulls in _includes/name.html. Front matter is YAML. The blog follows the magus docs
+// site: _posts/YYYY-MM-DD-slug.md renders to blog/YYYY/MM/DD/slug/, drafts and
+// future-dated posts are held back, and every post gets a newer/older pager and tag pages.
+namespace render;
+
+import "fs";
+import "std";
+import "proc";
+import "markdown";
+import "serialize";
+import "template";
+
+final MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+                "August", "September", "October", "November", "December"];
+
+// Directories the page walk never enters; dot-directories are skipped separately.
+final SKIP_DIRS = ["_layouts", "_includes", "_public", "_posts", "_site", "node_modules"];
+
+// "{{" and "}}" cannot be written as plain literals: the lexer reads them as interpolation.
+final OPEN = "\{\{";
+final CLOSE = "}}";
+
+final DESCRIPTION_MAX = 155;
+final WORDS_PER_MINUTE = 200;
+
+object Doc {
+    title: str = "",
+    description: str = "",
+    layout: str = "",
+    date: str = "",
+    author: str = "",
+    tags: [str],
+    draft: bool = false,
+    body: str = "",
+}
+
+object Post {
+    name: str = "",
+    title: str = "",
+    description: str = "",
+    date: str = "",
+    author: str = "",
+    tags: [str],
+    path: str = "",
+    html: str = "",
+    minutes: int = 1,
+}
+
+// Page is what renderPage needs beyond the shared site variables.
+object Page {
+    src: str = "",
+    dest: str = "",
+    path: str = "",
+    layout: str = "",
+    title: str = "",
+    description: str = "",
+    body: str = "",
+    ogType: str = "website",
+    isTemplate: bool = false,
+    date: str = "",
+    dateAttr: str = "",
+    author: str = "",
+    reading: str = "",
+    tagsHtml: str = "",
+    pager: str = "",
+}
+
+// parseConfig reads squib.ini into flat section_key variables. A value's surrounding quotes
+// are dropped, a trailing backslash continues it on the next line, and ';' starts a comment.
+// [squib] keys also answer to their bare name (base_url, site_url).
+fun parseConfig(path: str) > mut {str: str} !> any {
+    final vars: mut {str: str} = mut {};
+    var section = "";
+    var key = "";
+    var value = "";
+    var open = false;
+
+    foreach (raw in fs\readFile(path).split("\n")) {
+        final line = raw.trim();
+        if (open) {
+            value = value + stripContinuation(line);
+            open = line.endsWith("\\");
+        } else {
+            if (line == "" or line.startsWith(";") or line.startsWith("#")) { continue; }
+            if (line.startsWith("[") and line.endsWith("]")) {
+                section = line.sub(1, len: line.len() - 2);
+                continue;
+            }
+            final eq = line.indexOf("=");
+            if (eq == null) { continue; }
+            key = line.sub(0, eq).trim();
+            final rest = line.sub(eq + 1).trim();
+            value = stripContinuation(rest);
+            open = rest.endsWith("\\");
+        }
+        if (!open) {
+            vars[section + "_" + key] = unquote(value);
+            if (section == "squib") { vars[key] = unquote(value); }
+        }
+    }
+    return vars;
+}
+
+fun stripContinuation(s: str) > str {
+    if (s.endsWith("\\")) { return s.sub(0, s.len() - 1); }
+    return s;
+}
+
+fun unquote(s: str) > str {
+    var r = s.trim();
+    if (r.len() >= 2 and r.startsWith("\"") and r.endsWith("\"")) {
+        r = r.sub(1, len: r.len() - 2);
+    }
+    return r;
+}
+
+// resolveConfig renders config values that reference other values. Each pass resolves one
+// level of nesting; the cap turns a reference cycle into an error instead of a hang.
+fun resolveConfig(vars: mut {str: str}) > void !> any {
+    var pass = 0;
+    while (pass < 5) {
+        var changed = false;
+        foreach (k in vars.keys()) {
+            final v = vars[k] ?? "";
+            if (v.indexOf(OPEN) != null) {
+                vars[k] = template\render(v, vars);
+                changed = true;
+            }
+        }
+        if (!changed) { return; }
+        pass = pass + 1;
+    }
+    throw "config values reference each other in a cycle";
+}
+
+// loadDoc reads a file's YAML front matter. A YAML date decodes as RFC3339; only the
+// calendar day is kept. tags may be a list or a space-separated string.
+fun loadDoc(path: str) > Doc !> any {
+    final src = fs\readFile(path);
+    final fm = serialize\jsonDecode(markdown\frontmatter(src));
+
+    final tags: mut [str] = mut [<str>];
+    foreach (t in fm.q("tags").listValue()) { tags.append(t.stringValue()); }
+    if (tags.len() == 0) {
+        foreach (t in fm.q("tags").stringValue().split(" ")) {
+            if (t != "") { tags.append(t); }
+        }
+    }
+
+    return Doc{
+        title = fm.q("title").stringValue(),
+        description = fm.q("description").stringValue(),
+        layout = fm.q("layout").stringValue(),
+        date = fm.q("date").stringValue().split("T")[0],
+        author = fm.q("author").stringValue(),
+        tags = tags,
+        draft = fm.q("draft").booleanValue(),
+        body = markdown\stripFrontmatter(src),
+    };
+}
+
+fun strLess(a: str, b: str) > bool {
+    final n = a.len();
+    final m = b.len();
+    var i = 0;
+    while (i < n and i < m) {
+        if (a.byte(i) != b.byte(i)) { return a.byte(i) < b.byte(i); }
+        i = i + 1;
+    }
+    return n < m;
+}
+
+fun isDated(name: str) > bool {
+    if (name.len() < 12) { return false; }
+    var i = 0;
+    while (i < 10) {
+        final b = name.byte(i);
+        if (i == 4 or i == 7) {
+            if (b != 45) { return false; }
+        } else if (b < 48 or b > 57) { return false; }
+        i = i + 1;
+    }
+    return name.byte(10) == 45;
+}
+
+fun prettyDate(stamp: str) > str {
+    final m = (std\parseInt(stamp.sub(5, len: 2)) ?? 1) - 1;
+    final d = std\parseInt(stamp.sub(8, len: 2)) ?? 1;
+    return MONTHS[m] + " {d}, " + stamp.sub(0, 4);
+}
+
+// blogPath is blog/YYYY/MM/DD/slug/ for _posts/YYYY-MM-DD-slug.md.
+fun blogPath(name: str, vars: {str: str}) > str {
+    final slug = name.sub(11, len: name.len() - 11 - 3).lower();
+    return (vars["pagination_url"] ?? "").sub(1) + "/" + name.sub(0, len: 4)
+        + "/" + name.sub(5, len: 2) + "/" + name.sub(8, len: 2) + "/" + slug + "/";
+}
+
+fun tagSlug(tag: str) > str {
+    return tag.lower().replace(" ", "-");
+}
+
+fun escapeXml(s: str) > str {
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+}
+
+fun lastSpace(s: str) > int {
+    var i = s.len() - 1;
+    while (i > 0) {
+        if (s.byte(i) == 32) { return i; }
+        i = i - 1;
+    }
+    return 0;
+}
+
+// firstParagraph picks the page description: the first prose line, markup stripped,
+// cut at a word boundary.
+fun firstParagraph(md: str) > str {
+    foreach (raw in md.split("\n")) {
+        final line = raw.trim();
+        if (line == "" or line.startsWith("#") or line.startsWith("!") or line.startsWith("<")
+            or line.startsWith("```") or line.startsWith("-") or line.startsWith(">")) {
+            continue;
+        }
+        final text = line.replace("`", "").replace("*", "");
+        if (text.len() <= DESCRIPTION_MAX) { return text; }
+        final cut = text.sub(0, DESCRIPTION_MAX);
+        final space = lastSpace(cut);
+        return (if (space == 0) cut else cut.sub(0, space)) + "...";
+    }
+    return "";
+}
+
+fun readingMinutes(md: str) > int {
+    var words = 0;
+    foreach (w in md.replace("\n", " ").split(" ")) {
+        if (w != "") { words = words + 1; }
+    }
+    var minutes = 1;
+    while (minutes * WORDS_PER_MINUTE < words) { minutes = minutes + 1; }
+    return minutes;
+}
+
+// buildDate is the HEAD commit's date, not the wall clock, so a build is reproducible and
+// a post dated after it stays unpublished until a later commit lands.
+fun buildDate() > str !> any {
+    return proc\exec("git", ["log", "-1", "--format=%cs"], null, {"quiet": true}).stdout.trim();
+}
+
+fun listPages(dir: str, rel: str, found: mut [str]) > void !> any {
+    foreach (name in fs\listDir(dir)) {
+        if (name.startsWith(".")) { continue; }
+        final path = fs\join(dir, name);
+        final relPath = if (rel == "") name else rel + "/" + name;
+        if (fs\isDir(path)) {
+            var skip = false;
+            foreach (s in SKIP_DIRS) { if (s == name) { skip = true; } }
+            if (!skip) { listPages(path, relPath, found); }
+        } else if ((name.endsWith(".html") or name.endsWith(".md")) and name != "README.md") {
+            found.append(relPath);
+        }
+    }
+}
+
+fun loadPartials() > mut {str: str} !> any {
+    final partials: mut {str: str} = mut {};
+    foreach (name in fs\listDir("_includes")) {
+        if (name.endsWith(".html")) {
+            partials[name.sub(0, name.len() - 5)] = fs\readFile(fs\join("_includes", name));
+        }
+    }
+    return partials;
+}
+
+// checkTags fails the build on a {{ name }} that nothing defines. Mustache renders an
+// unknown name as empty, which would ship a silently blank attribute.
+fun checkTags(text: str, known: {str: str}, partials: {str: str}, where: str) > void !> any {
+    var rest = text;
+    while (true) {
+        final lo = rest.indexOf(OPEN);
+        if (lo == null) { return; }
+        final hi = rest.indexOf(CLOSE);
+        if (hi == null) { throw "{where}: unclosed tag"; }
+        var inner = rest.sub(lo + 2, len: hi - lo - 2).trim();
+        rest = rest.sub(hi + 2);
+        if (inner.startsWith("\{")) {
+            inner = inner.sub(1).trim();
+            rest = rest.sub(1);
+        }
+
+        if (inner.startsWith(">")) {
+            final p = inner.sub(1).trim();
+            if (partials[p] == null) { throw "{where}: no partial _includes/{p}.html"; }
+        } else if (inner.startsWith("!") or inner.startsWith("#") or inner.startsWith("/")
+                   or inner.startsWith("^")) {
+            continue;
+        } else {
+            final name = if (inner.startsWith("&")) inner.sub(1).trim() else inner;
+            if (known[name] == null) { throw "{where}: unknown variable {name}"; }
+        }
+    }
+}
+
+fun canonicalPath(path: str) > str {
+    if (path.endsWith("index.html")) { return path.sub(0, path.len() - 10); }
+    return path;
+}
+
+fun renderPage(page: Page, base: {str: str}, partials: {str: str}) > void !> any {
+    final ctx: mut {str: str} = mut {};
+    foreach (k in base.keys()) { ctx[k] = base[k] ?? ""; }
+    ctx["title"] = page.title;
+    ctx["description"] = if (page.description == "") (base["site_description"] ?? "") else page.description;
+    ctx["og_type"] = page.ogType;
+    ctx["canonical_url"] = (base["site_origin"] ?? "") + (base["base_url"] ?? "") + "/" + canonicalPath(page.path);
+    ctx["date"] = page.date;
+    ctx["date_attr"] = page.dateAttr;
+    ctx["author"] = page.author;
+    ctx["reading_time"] = page.reading;
+    ctx["tags_html"] = page.tagsHtml;
+    ctx["pager"] = page.pager;
+    ctx["content"] = "";
+
+    final layoutSrc = fs\readFile(page.layout);
+    checkTags(layoutSrc, ctx, partials, page.layout);
+    foreach (name in partials.keys()) {
+        checkTags(partials[name] ?? "", ctx, partials, "_includes/{name}.html");
+    }
+
+    if (page.isTemplate) {
+        checkTags(page.body, ctx, partials, page.src);
+        ctx["content"] = template\renderPartials(page.body, ctx, partials);
+    } else {
+        ctx["content"] = page.body;
+    }
+
+    std\print("render {page.src} -> {page.dest}");
+    fs\mkdirAll(fs\dirname(page.dest));
+    fs\writeFile(page.dest, template\renderPartials(layoutSrc, ctx, partials));
+}
+
+fun postList(posts: [Post], base: {str: str}) > str {
+    if (posts.len() == 0) { return "<p>No posts yet.</p>"; }
+    var items = "";
+    foreach (p in posts) {
+        items = items + "<li><time datetime=\"" + p.date + "\">" + p.date + "</time><a href=\""
+            + escapeXml((base["base_url"] ?? "") + "/" + p.path) + "\">" + escapeXml(p.title) + "</a></li>\n";
+    }
+    return "<ul>\n" + items + "</ul>";
+}
+
+fun tagLinks(tags: [str], base: {str: str}) > str {
+    final links: mut [str] = mut [<str>];
+    foreach (t in tags) {
+        links.append("<a href=\"" + escapeXml((base["base_url"] ?? "") + (base["pagination_url"] ?? "")
+            + "/tags/" + tagSlug(t) + "/") + "\">" + escapeXml(t) + "</a>");
+    }
+    return links.join(" ");
+}
+
+// pagerFor links a post to its newer and older neighbours; posts is newest first.
+fun pagerFor(posts: [Post], i: int, base: {str: str}) > str {
+    if (posts.len() < 2) { return ""; }
+    var newer = "";
+    var older = "";
+    if (i > 0) {
+        final p = posts[i - 1];
+        newer = "<li><a href=\"" + escapeXml((base["base_url"] ?? "") + "/" + p.path) + "\" rel=\"prev\">&larr; "
+            + escapeXml(p.title) + "</a></li>";
+    }
+    if (i < posts.len() - 1) {
+        final p = posts[i + 1];
+        older = "<li><a href=\"" + escapeXml((base["base_url"] ?? "") + "/" + p.path) + "\" rel=\"next\">"
+            + escapeXml(p.title) + " &rarr;</a></li>";
+    }
+    return "<nav aria-label=\"Posts\"><ul>" + newer + older + "</ul></nav>";
+}
+
+// attrTargets lists every href/src value in html.
+fun attrTargets(html: str) > [str] {
+    final found: mut [str] = mut [<str>];
+    foreach (attr in ["href=\"", "src=\""]) {
+        var rest = html;
+        var at = rest.indexOf(attr);
+        while (at != null) {
+            rest = rest.sub(at + attr.len());
+            final end = rest.indexOf("\"");
+            if (end == null) { break; }
+            found.append(rest.sub(0, end));
+            at = rest.indexOf(attr);
+        }
+    }
+    return found;
+}
+
+fun existsAsPage(outDir: str, target: str) > bool !> any {
+    final p = fs\join(outDir, target);
+    if (fs\isFile(p)) { return true; }
+    return fs\isDir(p) and fs\isFile(fs\join(p, "index.html"));
+}
+
+// checkClassless keeps the markup semantic: styling hooks belong in element selectors, so a
+// class or inline style anywhere in the output is a build error.
+fun checkClassless(outDir: str, files: [str]) > void !> any {
+    final found: mut [str] = mut [<str>];
+    foreach (f in files) {
+        final html = fs\readFile(fs\join(outDir, f));
+        foreach (attr in [" class=", " style="]) {
+            if (html.indexOf(attr) != null) { found.append(f + " uses" + attr); }
+        }
+    }
+    if (found.len() > 0) { throw "markup must be classless:\n" + found.join("\n"); }
+}
+
+// checkLinks fails the build when a site-local link in the output points at nothing.
+fun checkLinks(outDir: str, files: [str]) > void !> any {
+    final broken: mut [str] = mut [<str>];
+    foreach (f in files) {
+        foreach (t in attrTargets(fs\readFile(fs\join(outDir, f)))) {
+            if (!t.startsWith("/") or t.startsWith("//")) { continue; }
+            var target = t;
+            final cut = target.indexOf("#");
+            if (cut != null) { target = target.sub(0, cut); }
+            if (target == "" or target == "/") { continue; }
+            if (!existsAsPage(outDir, target.sub(1))) { broken.append(f + " -> " + t); }
+        }
+    }
+    if (broken.len() > 0) { throw "broken links:\n" + broken.join("\n"); }
+}
+
+// sortStrings orders names ascending, or descending when newestFirst.
+fun sortStrings(names: mut [str], newestFirst: bool) > void {
+    var i = 1;
+    while (i < names.len()) {
+        var j = i;
+        while (j > 0 and (if (newestFirst) strLess(names[j - 1], names[j]) else strLess(names[j], names[j - 1]))) {
+            final t = names[j - 1];
+            names[j - 1] = names[j];
+            names[j] = t;
+            j = j - 1;
+        }
+        i = i + 1;
+    }
+}
+
+// loadPosts returns the publishable posts, newest first. A front matter date, when given,
+// must agree with the filename so the permalink and the printed date cannot drift.
+fun loadPosts(base: {str: str}, today: str) > [Post] !> any {
+    final names: mut [str] = mut [<str>];
+    foreach (name in fs\listDir("_posts")) {
+        if (name.startsWith("_") or !name.endsWith(".md")) { continue; }
+        if (!isDated(name)) { throw "post {name} must be named YYYY-MM-DD-slug.md"; }
+        names.append(name);
+    }
+    sortStrings(names, true);
+
+    final posts: mut [Post] = mut [<Post>];
+    foreach (name in names) {
+        final doc = loadDoc(fs\join("_posts", name));
+        final stamp = name.sub(0, 10);
+        if (doc.draft) { continue; }
+        if (doc.title == "") { throw "post {name} has no title"; }
+        if (doc.date != "" and doc.date != stamp) {
+            throw "post {name}: front matter date {doc.date} disagrees with the filename";
+        }
+        if (strLess(today, stamp)) { continue; }
+
+        posts.append(Post{
+            name = name,
+            title = doc.title,
+            description = if (doc.description == "") firstParagraph(doc.body) else doc.description,
+            date = stamp,
+            author = doc.author,
+            tags = doc.tags,
+            path = blogPath(name, base),
+            html = markdown\toHtml(doc.body),
+            minutes = readingMinutes(doc.body),
+        });
+    }
+    return posts;
+}
+
+fun writeRedirect(outDir: str, oldPath: str, to: str, title: str) > void !> any {
+    final url = escapeXml(to);
+    fs\mkdirAll(fs\dirname(fs\join(outDir, oldPath)));
+    fs\writeFile(fs\join(outDir, oldPath),
+        "<!DOCTYPE html>\n<html lang=\"en\">\n<meta charset=\"utf-8\">\n<title>" + escapeXml(title)
+        + "</title>\n<meta name=\"robots\" content=\"noindex\">\n<link rel=\"canonical\" href=\"" + url
+        + "\">\n<meta http-equiv=\"refresh\" content=\"0; url=" + url + "\">\n<p><a href=\"" + url + "\">"
+        + escapeXml(title) + "</a></p>\n");
+}
+
+fun writeFeeds(outDir: str, base: {str: str}, posts: [Post], sitemapPaths: [str]) > void !> any {
+    final site = (base["site_origin"] ?? "") + (base["base_url"] ?? "");
+
+    var urls = "";
+    foreach (path in sitemapPaths) {
+        urls = urls + "<url><loc>" + escapeXml(site + "/" + path) + "</loc></url>\n";
+    }
+    fs\writeFile(fs\join(outDir, "sitemap.xml"),
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n" + urls + "</urlset>\n");
+    fs\writeFile(fs\join(outDir, "robots.txt"),
+        "User-agent: *\nAllow: /\nSitemap: " + site + "/sitemap.xml\n");
+
+    var entries = "";
+    foreach (p in posts) {
+        final loc = escapeXml(site + "/" + p.path);
+        entries = entries + "<entry><title>" + escapeXml(p.title) + "</title>"
+            + "<link href=\"" + loc + "\"/><id>" + loc + "</id>"
+            + "<updated>" + p.date + "T00:00:00Z</updated>"
+            + "<summary>" + escapeXml(p.description) + "</summary></entry>\n";
+    }
+    final newest = if (posts.len() > 0) posts[0].date else "1970-01-01";
+    fs\writeFile(fs\join(outDir, "feed.xml"),
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<feed xmlns=\"http://www.w3.org/2005/Atom\">\n"
+        + "<title>" + escapeXml(base["contact_full_name"] ?? "") + "</title>"
+        + "<link href=\"" + escapeXml(site + "/feed.xml") + "\" rel=\"self\"/>"
+        + "<link href=\"" + escapeXml(site + "/") + "\"/>"
+        + "<id>" + escapeXml(site + "/") + "</id>"
+        + "<updated>" + newest + "T00:00:00Z</updated>\n" + entries + "</feed>\n");
+}
+
+// build renders the site in the working directory into outDir, replacing whatever was there.
+export fun build(outDir: str, config: str) > void !> any {
+    final base = parseConfig(config);
+    resolveConfig(base);
+    base["site_origin"] = "https://" + (base["site_url"] ?? "");
+    if ((base["site_description"] ?? "") == "") {
+        base["site_description"] = "Personal website for " + (base["contact_full_name"] ?? "");
+    }
+    base["css"] = fs\readFile(fs\join("_includes", "style.css"));
+    final partials = loadPartials();
+    final posts = loadPosts(base, buildDate());
+    fs\removeAll(outDir);
+    fs\mkdirAll(outDir);
+
+    final postsDir = (base["pagination_url"] ?? "").sub(1);
+    final recent: mut [Post] = mut [<Post>];
+    foreach (p in posts) { if (recent.len() < 5) { recent.append(p); } }
+    base["posts"] = postList(posts, base);
+    base["recent_posts"] = postList(recent, base);
+
+    final byTag: mut {str: mut [Post]} = mut {};
+    final tagNames: mut [str] = mut [<str>];
+    foreach (p in posts) {
+        foreach (t in p.tags) {
+            final key = tagSlug(t);
+            if (byTag[key] == null) {
+                byTag[key] = mut [<Post>];
+                tagNames.append(key);
+            }
+            byTag[key]!.append(p);
+        }
+    }
+    sortStrings(tagNames, false);
+
+    final tagLinkItems: mut [str] = mut [<str>];
+    foreach (t in tagNames) {
+        tagLinkItems.append("<li><a href=\"" + escapeXml((base["base_url"] ?? "") + "/" + postsDir + "/tags/" + t + "/")
+            + "\">" + escapeXml(t) + "</a></li>");
+    }
+    base["tag_links"] = tagLinkItems.join("\n");
+
+    final written: mut [str] = mut [<str>];
+    final sitemapPaths: mut [str] = mut [<str>];
+
+    final pages: mut [str] = mut [<str>];
+    listPages(".", "", pages);
+    foreach (src in pages) {
+        final doc = loadDoc(src);
+        if (doc.draft) { continue; }
+        var rel = src;
+        var body = doc.body;
+        var isTemplate = true;
+        if (src.endsWith(".md")) {
+            body = markdown\toHtml(body);
+            rel = src.sub(0, src.len() - 3) + ".html";
+            isTemplate = false;
+        }
+        renderPage(Page{
+            src = src,
+            dest = fs\join(outDir, rel),
+            path = rel,
+            layout = if (doc.layout == "") "_layouts/default.html" else doc.layout,
+            title = doc.title,
+            description = doc.description,
+            body = body,
+            isTemplate = isTemplate,
+        }, base, partials);
+        written.append(rel);
+        if (rel != "404.html") { sitemapPaths.append(canonicalPath(rel)); }
+    }
+
+    var idx = 0;
+    foreach (p in posts) {
+        renderPage(Page{
+            src = fs\join("_posts", p.name),
+            dest = fs\join(outDir, p.path, "index.html"),
+            path = p.path,
+            layout = "_layouts/post.html",
+            title = p.title,
+            description = p.description,
+            body = p.html,
+            ogType = "article",
+            date = prettyDate(p.date),
+            dateAttr = p.date,
+            author = p.author,
+            reading = "{p.minutes} min read",
+            tagsHtml = tagLinks(p.tags, base),
+            pager = pagerFor(posts, idx, base),
+        }, base, partials);
+        written.append(p.path + "index.html");
+        sitemapPaths.append(p.path);
+        idx = idx + 1;
+
+        // The pre-rewrite permalink was blog/YYYY/MM/DD/slug.html.
+        final old = p.path.sub(0, p.path.len() - 1) + ".html";
+        writeRedirect(outDir, old, (base["site_origin"] ?? "") + (base["base_url"] ?? "") + "/" + p.path, p.title);
+        written.append(old);
+    }
+
+
+    var tagItems = "";
+    foreach (t in tagNames) {
+        final tagged = byTag[t]!;
+        final path = postsDir + "/tags/" + t + "/";
+        tagItems = tagItems + "<li><a href=\"" + escapeXml((base["base_url"] ?? "") + "/" + path) + "\">"
+            + escapeXml(t) + "</a> <small>({tagged.len()})</small></li>\n";
+        renderPage(Page{
+            src = "tag " + t,
+            dest = fs\join(outDir, path, "index.html"),
+            path = path,
+            layout = "_layouts/default.html",
+            title = "tag: " + t,
+            description = "Posts tagged " + t + ".",
+            body = "<h1>tag: " + escapeXml(t) + "</h1>\n" + postList(tagged, base),
+        }, base, partials);
+        written.append(path + "index.html");
+        sitemapPaths.append(path);
+    }
+    final tagsPath = postsDir + "/tags/";
+    renderPage(Page{
+        src = "tags",
+        dest = fs\join(outDir, tagsPath, "index.html"),
+        path = tagsPath,
+        layout = "_layouts/default.html",
+        title = "tags",
+        description = "Every tag used on the blog.",
+        body = "<h1>tags</h1>\n<ul>\n" + tagItems + "</ul>",
+    }, base, partials);
+    written.append(tagsPath + "index.html");
+    sitemapPaths.append(tagsPath);
+
+    fs\copyDir("_public", outDir);
+    writeFeeds(outDir, base, posts, sitemapPaths);
+    checkClassless(outDir, written);
+    checkLinks(outDir, written);
+}
