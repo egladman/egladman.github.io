@@ -376,7 +376,7 @@ fun tagLinks(tags: [str], base: {str: str}) > str {
     return links.join(" ");
 }
 
-// pagerFor links a post to its newer and older neighbours; posts is newest first.
+// pagerFor links a post to its newer and older neighbors; posts is newest first.
 fun pagerFor(posts: [Post], i: int, base: {str: str}) > str {
     if (posts.len() < 2) { return ""; }
     var newer = "";

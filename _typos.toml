@@ -1,0 +1,12 @@
+# typos config, the same pattern as the magus repo. It flags only known misspellings from a
+# curated map, so jargon like magus, buzz and mustache never trips it and this file stays lean.
+
+[default]
+# Without a locale typos accepts every English variant. Pinning one makes it the site's spelling.
+locale = "en-us"
+
+[files]
+extend-exclude = [
+  # The 2020 posts are an archive kept as written, misspellings included. Newer posts are checked.
+  "_posts/2020-*",
+]

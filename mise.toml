@@ -4,3 +4,4 @@ min_version = { hard = "2026.4.8", soft = "2026.10.0" }
 "github:egladman/magus" = "0.5.0-rc.3"
 node = "24.21.0"
 "npm:stylelint" = "17.16.0"
+"aqua:crate-ci/typos" = "1.28.4"
