@@ -16,6 +16,8 @@ mise exec -- magus run build
 
 The site is classless: `lint` runs stylelint over `_includes/style.css` and fails on any class or id selector, and `build` fails if any generated page contains a `class` or `style` attribute.
 
+Colors live only in `colors.buzz`. The build turns them into the stylesheet's custom properties and fails if any color drops below its WCAG contrast target; `magus run colors-report` prints each ratio.
+
 ### Deploy
 
 A push to `development` runs [`.github/workflows/pages.yaml`](.github/workflows/pages.yaml), which builds the site and publishes it with GitHub Pages. Pull requests build but do not publish. The custom domain is set in the repository's Pages settings.

@@ -12,6 +12,7 @@ import "proc";
 import "markdown";
 import "serialize";
 import "template";
+import "colors" as palette;
 import "images" as images;
 
 final MONTHS = ["January", "February", "March", "April", "May", "June", "July",
@@ -632,7 +633,8 @@ export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
     if ((base["site_description"] ?? "") == "") {
         base["site_description"] = "Personal website for " + (base["contact_full_name"] ?? "");
     }
-    base["css"] = fs\readFile(fs\join("_includes", "style.css"));
+    palette\verify();
+    base["css"] = palette\css() + fs\readFile(fs\join("_includes", "style.css"));
     final partials = loadPartials();
     final posts = loadPosts(base, buildDate());
     fs\removeAll(outDir);

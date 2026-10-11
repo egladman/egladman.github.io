@@ -1,12 +1,15 @@
 import "magus";
 import "proc";
+import "std";
+import "colors" as palette;
 import "images" as images;
 import "render" as renderer;
 
 magus\project({
     "sources": ["*.html", "blog/**", "_includes/**", "_layouts/**", "_posts/**", "_public/**",
-                "squib.ini", "render.buzz", "images.buzz", "stylelint.config.mjs"],
+                "squib.ini", "render.buzz", "images.buzz", "colors.buzz", "stylelint.config.mjs"],
     "targets": {
+        "colors-report": {"skip_cache": "prints to the console, so a replay would print nothing"},
         "build": {"skip_cache": "reads the HEAD commit date to hold back future-dated posts, which file hashing cannot see"},
     },
 });
@@ -35,4 +38,9 @@ export fun lint(ctx: magus\Context, args: [str]) > void !> any {
 export fun images_generate(ctx: magus\Context, args: [str]) > void !> any {
     ctx.modifiesExistingFiles("_public/img/**");
     images\compress("_public/img", IMAGE_LIMIT, IMAGE_MAX_WIDTH, IMAGE_QUALITY);
+}
+
+// colors-report prints each palette color's contrast ratio against its theme background.
+export fun colors_report(ctx: magus\Context, args: [str]) > void !> any {
+    foreach (line in palette\report()) { std\print(line); }
 }
