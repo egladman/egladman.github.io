@@ -447,6 +447,58 @@ fun sortStrings(names: mut [str], newestFirst: bool) > void {
     }
 }
 
+// attr reads one attribute's value out of a single HTML tag.
+fun attr(tag: str, name: str) > str {
+    final key = " " + name + "=\"";
+    final at = tag.indexOf(key);
+    if (at == null) { return ""; }
+    final rest = tag.sub(at + key.len());
+    final end = rest.indexOf("\"");
+    if (end == null) { return ""; }
+    return rest.sub(0, end);
+}
+
+// figure wraps one <img> in <figure> with a caption: the Markdown title when given, else
+// the alt text. When the caption is the alt text the img's own alt is emptied so a screen
+// reader does not announce it twice. Every image must have alt text.
+fun figure(tag: str, where: str) > str !> any {
+    final src = attr(tag, "src");
+    final alt = attr(tag, "alt");
+    final title = attr(tag, "title");
+    if (alt == "") { throw "{where}: image {src} needs alt text"; }
+    final caption = if (title == "") alt else title;
+    final imgAlt = if (title == "") "" else alt;
+    return "<figure><img src=\"" + src + "\" alt=\"" + imgAlt + "\" loading=\"lazy\" decoding=\"async\">"
+        + "<figcaption>" + caption + "</figcaption></figure>\n";
+}
+
+// figures lifts each image that opens a paragraph out into a figure, keeping any text that
+// follows it as a paragraph, so a post only writes ![alt](src "caption") and never positions
+// or sizes anything.
+fun figures(html: str, where: str) > str !> any {
+    var acc = "";
+    var rest = html;
+    while (true) {
+        final at = rest.indexOf("<p><img ");
+        if (at == null) { break; }
+        final tail = rest.sub(at);
+        final end = tail.indexOf("</p>");
+        if (end == null) { break; }
+
+        var inner = tail.sub(3, len: end - 3).trim();
+        var made = "";
+        while (inner.startsWith("<img ")) {
+            final gt = inner.indexOf(">");
+            if (gt == null) { break; }
+            made = made + figure(inner.sub(0, gt + 1), where);
+            inner = inner.sub(gt + 1).trim();
+        }
+        acc = acc + rest.sub(0, at) + made + (if (inner == "") "" else "<p>" + inner + "</p>\n");
+        rest = tail.sub(end + 4);
+    }
+    return acc + rest;
+}
+
 // loadPosts returns the publishable posts, newest first. A front matter date, when given,
 // must agree with the filename so the permalink and the printed date cannot drift.
 fun loadPosts(base: {str: str}, today: str) > [Post] !> any {
@@ -477,7 +529,7 @@ fun loadPosts(base: {str: str}, today: str) > [Post] !> any {
             author = doc.author,
             tags = doc.tags,
             path = blogPath(name, base),
-            html = markdown\toHtml(doc.body),
+            html = figures(markdown\toHtml(doc.body), name),
             minutes = readingMinutes(doc.body),
         });
     }
@@ -578,7 +630,7 @@ export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
         var body = doc.body;
         var isTemplate = true;
         if (src.endsWith(".md")) {
-            body = markdown\toHtml(body);
+            body = figures(markdown\toHtml(body), src);
             rel = src.sub(0, src.len() - 3) + ".html";
             isTemplate = false;
         }
