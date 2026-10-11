@@ -14,7 +14,7 @@ mise exec -- magus run lint
 mise exec -- magus run build
 ```
 
-The site is classless: `lint` runs stylelint over `_includes/style.css` and fails on any class or id selector, and `build` fails if any generated page contains a `class` or `style` attribute.
+The site is classless: `lint` runs stylelint over `_includes/style.css` and fails on any class or id selector, and runs [typos](https://github.com/crate-ci/typos) over the repo (US English; the 2020 posts are excluded as an archive), and `build` fails if any generated page contains a `class` or `style` attribute.
 
 Colors live only in `colors.buzz`. The build turns them into the stylesheet's custom properties and fails if any color drops below its WCAG contrast target; `magus run colors-report` prints each ratio.
 

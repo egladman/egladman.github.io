@@ -7,7 +7,7 @@ import "render" as renderer;
 
 magus\project({
     "sources": ["*.html", "blog/**", "_includes/**", "_layouts/**", "_posts/**", "_public/**",
-                "squib.ini", "render.buzz", "images.buzz", "colors.buzz", "stylelint.config.mjs"],
+                "squib.ini", "render.buzz", "images.buzz", "colors.buzz", "stylelint.config.mjs", "_typos.toml", "README.md"],
     "targets": {
         "colors-report": {"skip_cache": "prints to the console, so a replay would print nothing"},
         "build": {"skip_cache": "reads the HEAD commit date to hold back future-dated posts, which file hashing cannot see"},
@@ -28,10 +28,20 @@ export fun build(ctx: magus\Context, args: [str]) > void !> any {
     renderer\build(OUT, CONFIG, IMAGE_LIMIT);
 }
 
-// lint enforces the classless stylesheet; build enforces classless markup.
+// lint enforces the classless stylesheet and checks spelling; build enforces classless markup.
 export fun lint(ctx: magus\Context, args: [str]) > void !> any {
-    ctx.readsFiles("_includes/*.css", "stylelint.config.mjs");
+    ctx.readsFiles("_includes/*.css", "stylelint.config.mjs", "_typos.toml", "README.md", "*.html",
+                   "*.buzz", "squib.ini", "_includes/*", "_layouts/*", "_posts/*.md", "blog/*.html");
     proc\exec("stylelint", ["_includes/*.css"]);
+    proc\exec("typos", ["--format", "brief"]);
+}
+
+// typos-fix rewrites known misspellings in place. It is separate from lint on purpose:
+// an autofix can turn an identifier into a different word, so read the diff before committing.
+export fun typos_fix(ctx: magus\Context, args: [str]) > void !> any {
+    ctx.modifiesExistingFiles("README.md", "*.html", "*.buzz", "squib.ini", "_includes/*", "_layouts/*",
+                              "_posts/*.md", "blog/*.html");
+    proc\exec("typos", ["--format", "brief", "-w"]);
 }
 
 // images-generate rewrites _public images in place; run it after adding a photo.
