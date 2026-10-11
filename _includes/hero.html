@@ -1,17 +1,28 @@
 <section>
-  <figure>
-    <img src="{{ base_url }}/img/profile.jpg">
-  </figure>
-  <nav>
-    <ul>
-      <li><kbd>Currently Looking</kbd></li>
-    </ul>
-  </nav>
-
-  <nav>
-      <ul>
-          <li>{{ content_intro }}</li>
-      </ul>
-  </nav>
-
+<h1>Hello</h1>
+<p>{{{ content_intro }}}</p>
+<nav aria-label="Elsewhere">
+<ul>
+<li><a href="{{ url_github }}">github</a></li>
+<li><a href="mailto:{{ contact_email }}">email</a></li>
+</ul>
+</nav>
+</section>
+<section>
+<h2>magus</h2>
+<p>A fast task orchestrator for polyglot monorepos. Targets are programs, not YAML.<br>
+<a href="https://eli.gladman.cc/magus/">website</a> | <a href="https://github.com/egladman/magus">source</a></p>
+</section>
+<section>
+<h2>recent posts</h2>
+{{{ recent_posts }}}
+<p><a href="{{ base_url }}{{ pagination_url }}/">all posts</a></p>
+</section>
+<section>
+<h2>tags</h2>
+<nav aria-label="Tags">
+<ul>
+{{{ tag_links }}}
+</ul>
+</nav>
 </section>

@@ -1,7 +1,7 @@
 ---
-layout="_layouts/post.html"
-title="Parsing INI Files with Pure Bash"
-tags="bash"
+title: "Parsing INI Files with Pure Bash"
+tags: [bash]
+date: 2020-06-24
 ---
 While working on my static site generator [squib](https://github.com/egladman/squib), I decided to transition the configuration file to a `.ini`. The rational being that I needed a simple format that could easily be parsed with minimal effort. Squib is written 100% in Bash, so I wanted a solution that didn't require additional dependencies.
 

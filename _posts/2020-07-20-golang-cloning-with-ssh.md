@@ -1,7 +1,7 @@
 ---
-layout="_layouts/post.html"
-title="Golang: Using SSH instead of HTTPS to git clone packages"
-tags="golang progamming git"
+title: "Golang: Using SSH instead of HTTPS to git clone packages"
+tags: [golang, programming, git]
+date: 2020-07-20
 ---
 
 ![Go Gopher - https://golang.org/doc/gopher/](/img/post/2020/07/20/appenginegopher.jpg)

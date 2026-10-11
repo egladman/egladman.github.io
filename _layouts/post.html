@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-    {{@ _includes/head.html }}
-    <body>
-
-        <section>
-            {{@ _includes/navbar.html }}
-            <article>
-                <h1>{{ __title__ }}</h1>
-                <p>Published: {{ __date__ }}</p>
-                {{ __content__ }}
-                <p>Tags: {{ __tags__ }}</p>
-            </article>
-            {{@ _includes/footer.html }}
-        </section>
-
-    </body>
+{{> head }}
+<body>
+<a href="#main">skip to content</a>
+{{> navbar }}
+{{{ breadcrumb }}}
+<main id="main">
+<article>
+<h1>{{ title }}</h1>
+<p><small><time datetime="{{ date_attr }}">{{ date }}</time>{{# author }} | {{ author }}{{/ author }} | {{ reading_time }}</small></p>
+{{{ content }}}
+</article>
+{{# tags_html }}<p><small>tags: {{{ tags_html }}}</small></p>{{/ tags_html }}
+{{{ pager }}}
+</main>
+{{> footer }}
+</body>
 </html>

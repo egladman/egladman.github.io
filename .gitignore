@@ -1,3 +1,2 @@
 _site/
-_public/css/vendor/
-*.fifo
+.magus/

@@ -1,8 +1,8 @@
 ---
-layout="_layouts/post.html"
-title="Hello World"
-author="Eli"
-tags="off-topic"
+title: "Hello World"
+author: Eli
+tags: [off-topic]
+date: 2020-06-22
 ---
 
 What better way to commemorate my new blog than to preface my first post with 'Hello World'?

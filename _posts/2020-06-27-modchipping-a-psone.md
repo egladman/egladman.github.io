@@ -1,7 +1,7 @@
 ---
-layout="_layouts/post.html"
-title="Modding a PSone to Play Homebrew, Imports, and Backups"
-tags="hardware console-modding"
+title: "Modding a PSone to Play Homebrew, Imports, and Backups"
+tags: [hardware, console-modding]
+date: 2020-06-27
 ---
 
 ![PIC12C508 package](/img/post/2020/06/27/package.jpg)

@@ -1,7 +1,7 @@
 ---
-layout="_layouts/post.html"
-title="Installing a NVMe SSD in the PineBook Pro"
-tags="hardware pinebook"
+title: "Installing a NVMe SSD in the PineBook Pro"
+tags: [hardware, pinebook]
+date: 2020-06-23
 ---
 
 I recently picked up the PineBook Pro, and a NVMe adapter (`V2-2019-1107`). In this post I'll go over how to install it.

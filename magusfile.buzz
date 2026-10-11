@@ -1,0 +1,46 @@
+import "magus";
+import "proc";
+import "std";
+import "colors" as palette;
+import "images" as images;
+import "render" as renderer;
+
+magus\project({
+    "sources": ["*.html", "blog/**", "_includes/**", "_layouts/**", "_posts/**", "_public/**",
+                "squib.ini", "render.buzz", "images.buzz", "colors.buzz", "stylelint.config.mjs"],
+    "targets": {
+        "colors-report": {"skip_cache": "prints to the console, so a replay would print nothing"},
+        "build": {"skip_cache": "reads the HEAD commit date to hold back future-dated posts, which file hashing cannot see"},
+    },
+});
+
+final OUT = "_site";
+final CONFIG = "squib.ini";
+
+// images-generate shrinks anything over IMAGE_LIMIT or IMAGE_MAX_WIDTH; build refuses
+// anything still over IMAGE_LIMIT.
+final IMAGE_LIMIT = 500 * 1024;
+final IMAGE_MAX_WIDTH = 1600;
+final IMAGE_QUALITY = 82;
+
+export fun build(ctx: magus\Context, args: [str]) > void !> any {
+    ctx.writesFiles("_site/**");
+    renderer\build(OUT, CONFIG, IMAGE_LIMIT);
+}
+
+// lint enforces the classless stylesheet; build enforces classless markup.
+export fun lint(ctx: magus\Context, args: [str]) > void !> any {
+    ctx.readsFiles("_includes/*.css", "stylelint.config.mjs");
+    proc\exec("stylelint", ["_includes/*.css"]);
+}
+
+// images-generate rewrites _public images in place; run it after adding a photo.
+export fun images_generate(ctx: magus\Context, args: [str]) > void !> any {
+    ctx.modifiesExistingFiles("_public/img/**");
+    images\compress("_public/img", IMAGE_LIMIT, IMAGE_MAX_WIDTH, IMAGE_QUALITY);
+}
+
+// colors-report prints each palette color's contrast ratio against its theme background.
+export fun colors_report(ctx: magus\Context, args: [str]) > void !> any {
+    foreach (line in palette\report()) { std\print(line); }
+}

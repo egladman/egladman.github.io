@@ -1,0 +1,137 @@
+// colors.buzz - the site palette. Hex values live here and nowhere else: the build renders them
+// into CSS custom properties and refuses a palette that misses its WCAG contrast targets.
+// To change a color, edit it below; the build says which role fails and by how much.
+namespace colors;
+
+import "std";
+
+// AAA for body-size text, AA for links and the prompt mark, 3:1 for decoration like rules.
+final TEXT = 7.0;
+final LINK = 4.5;
+final LINE = 3.0;
+
+object Role {
+    name: str = "",
+    hex: str = "",
+    minContrast: double = 0.0,
+}
+
+object Theme {
+    name: str = "",
+    background: str = "",
+    roles: [Role],
+}
+
+final DARK = Theme{
+    name = "dark",
+    background = "#000000",
+    roles = [
+        Role{ name = "fg", hex = "#ececec", minContrast = TEXT },
+        Role{ name = "dim", hex = "#a8a8a8", minContrast = TEXT },
+        Role{ name = "link", hex = "#8ab4e8", minContrast = LINK },
+        Role{ name = "seen", hex = "#b9a2dc", minContrast = LINK },
+        Role{ name = "prompt", hex = "#4ae04a", minContrast = LINK },
+        Role{ name = "rule", hex = "#5a5a5a", minContrast = LINE },
+    ],
+};
+
+final LIGHT = Theme{
+    name = "light",
+    background = "#ffffff",
+    roles = [
+        Role{ name = "fg", hex = "#000000", minContrast = TEXT },
+        Role{ name = "dim", hex = "#454545", minContrast = TEXT },
+        Role{ name = "link", hex = "#2f6bb3", minContrast = LINK },
+        Role{ name = "seen", hex = "#7a4fa3", minContrast = LINK },
+        Role{ name = "prompt", hex = "#0a6b1a", minContrast = LINK },
+        Role{ name = "rule", hex = "#777777", minContrast = LINE },
+    ],
+};
+
+fun hexDigit(c: int) > int {
+    if (c >= 48 and c <= 57) { return c - 48; }
+    if (c >= 97 and c <= 102) { return c - 87; }
+    if (c >= 65 and c <= 70) { return c - 55; }
+    return 0;
+}
+
+// channel reads the 0..1 value of one color channel (0 red, 1 green, 2 blue) from "#rrggbb".
+fun channel(hex: str, index: int) > double {
+    final at = 1 + index * 2;
+    final value = hexDigit(hex.byte(at)) * 16 + hexDigit(hex.byte(at + 1));
+    return std\toDouble(value) / 255.0;
+}
+
+// fifthRoot is Newton's method on r^5 = a. The magusfile math module has no pow, and the
+// gamma curve's exponent 2.4 is 12/5, so x^2.4 is (x^2) times the fifth root of x^2.
+fun fifthRoot(a: double) > double {
+    if (a <= 0.0) { return 0.0; }
+    var r = 1.0;
+    var i = 0;
+    while (i < 40) {
+        final r4 = r * r * r * r;
+        r = r - (r4 * r - a) / (5.0 * r4);
+        i = i + 1;
+    }
+    return r;
+}
+
+// linear undoes the sRGB gamma curve, as WCAG's relative luminance defines it.
+fun linear(c: double) > double {
+    if (c <= 0.03928) { return c / 12.92; }
+    final x = (c + 0.055) / 1.055;
+    return x * x * fifthRoot(x * x);
+}
+
+fun luminance(hex: str) > double !> any {
+    return 0.2126 * linear(channel(hex, 0)) + 0.7152 * linear(channel(hex, 1)) + 0.0722 * linear(channel(hex, 2));
+}
+
+// contrast is the WCAG ratio between two colors, always at least 1.
+fun contrast(a: str, b: str) > double !> any {
+    final la = luminance(a);
+    final lb = luminance(b);
+    final lighter = if (la > lb) la else lb;
+    final darker = if (la > lb) lb else la;
+    return (lighter + 0.05) / (darker + 0.05);
+}
+
+// tenths renders a ratio to one decimal place, e.g. 9.8.
+fun tenths(x: double) > str {
+    final t = std\toInt(x * 10.0 + 0.5);
+    return "{t / 10}.{t - (t / 10) * 10}";
+}
+
+// report lists every role's contrast against its theme's background and flags failures.
+export fun report() > [str] !> any {
+    final lines: mut [str] = mut [<str>];
+    foreach (theme in [DARK, LIGHT]) {
+        foreach (role in theme.roles) {
+            final ratio = contrast(role.hex, theme.background);
+            final verdict = if (ratio >= role.minContrast) "ok" else "FAILS";
+            lines.append("{theme.name} {role.name} {role.hex} {tenths(ratio)}:1 needs {tenths(role.minContrast)}:1 {verdict}");
+        }
+    }
+    return lines;
+}
+
+// verify fails the build when any role is below its minimum contrast.
+export fun verify() > void !> any {
+    final failing: mut [str] = mut [<str>];
+    foreach (line in report()) {
+        if (line.endsWith("FAILS")) { failing.append(line); }
+    }
+    if (failing.len() > 0) { throw "palette misses its contrast targets:\n" + failing.join("\n"); }
+}
+
+fun declarations(theme: Theme) > str {
+    var props = "--bg:" + theme.background + ";";
+    foreach (role in theme.roles) { props = props + "--" + role.name + ":" + role.hex + ";"; }
+    return props;
+}
+
+// css renders the palette: dark by default, light under the system preference.
+export fun css() > str {
+    return ":root\{color-scheme:dark light;" + declarations(DARK) + "}\n"
+        + "@media(prefers-color-scheme:light)\{:root\{" + declarations(LIGHT) + "}}\n";
+}
