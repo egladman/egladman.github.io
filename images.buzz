@@ -1,0 +1,66 @@
+// images.buzz - keeps _public images small. compress shrinks files over a threshold in place
+// with ImageMagick; oversized lists the files still over a hard limit, which build refuses.
+namespace images;
+
+import "fs";
+import "proc";
+import "std";
+
+final EXTENSIONS = [".jpg", ".jpeg", ".png"];
+
+fun isImage(name: str) > bool {
+    final lower = name.lower();
+    foreach (e in EXTENSIONS) { if (lower.endsWith(e)) { return true; } }
+    return false;
+}
+
+fun collect(dir: str, found: mut [str]) > void !> any {
+    foreach (name in fs\listDir(dir)) {
+        final path = fs\join(dir, name);
+        if (fs\isDir(path)) {
+            collect(path, found);
+        } else if (isImage(name)) {
+            found.append(path);
+        }
+    }
+}
+
+// oversized returns every image under dir larger than limitBytes.
+export fun oversized(dir: str, limitBytes: int) > [str] !> any {
+    final all: mut [str] = mut [<str>];
+    collect(dir, all);
+    final big: mut [str] = mut [<str>];
+    foreach (path in all) {
+        final size = fs\size(path);
+        if (size > limitBytes) { big.append(path + " ({size / 1024} KB)"); }
+    }
+    return big;
+}
+
+// compress rewrites each image that is over limitBytes or wider than maxWidth: downscaled,
+// stripped of metadata (EXIF carries GPS), and re-encoded. An image that fits both is never
+// touched, so a second run changes nothing and a lossy file is not re-encoded twice.
+export fun compress(dir: str, limitBytes: int, maxWidth: int, quality: int) > void !> any {
+    final all: mut [str] = mut [<str>];
+    collect(dir, all);
+    foreach (path in all) {
+        final before = fs\size(path);
+        final width = std\parseInt(proc\exec("magick", ["identify", "-format", "%w", path + "[0]"], null, {"quiet": true}).stdout.trim()) ?? 0;
+        if (before <= limitBytes and width <= maxWidth) { continue; }
+        final args: mut [str] = mut ["-auto-orient", "-strip", "-resize", "{maxWidth}x>"];
+        if (path.lower().endsWith(".png")) {
+            args.append("-define");
+            args.append("png:compression-level=9");
+        } else {
+            args.append("-interlace");
+            args.append("Plane");
+            args.append("-sampling-factor");
+            args.append("4:2:0");
+            args.append("-quality");
+            args.append("{quality}");
+        }
+        args.append(path);
+        proc\exec("mogrify", args, null, {"quiet": true});
+        std\print("{path}: {before / 1024} KB -> {fs\size(path) / 1024} KB");
+    }
+}

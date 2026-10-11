@@ -12,6 +12,7 @@ import "proc";
 import "markdown";
 import "serialize";
 import "template";
+import "images" as images;
 
 final MONTHS = ["January", "February", "March", "April", "May", "June", "July",
                 "August", "September", "October", "November", "December"];
@@ -525,7 +526,7 @@ fun writeFeeds(outDir: str, base: {str: str}, posts: [Post], sitemapPaths: [str]
 }
 
 // build renders the site in the working directory into outDir, replacing whatever was there.
-export fun build(outDir: str, config: str) > void !> any {
+export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
     final base = parseConfig(config);
     resolveConfig(base);
     base["site_origin"] = "https://" + (base["site_url"] ?? "");
@@ -655,6 +656,10 @@ export fun build(outDir: str, config: str) > void !> any {
     written.append(tagsPath + "index.html");
     sitemapPaths.append(tagsPath);
 
+    final big = images\oversized("_public", imageLimit);
+    if (big.len() > 0) {
+        throw "images over {imageLimit / 1024} KB; run magus run images-generate:\n" + big.join("\n");
+    }
     fs\copyDir("_public", outDir);
     writeFeeds(outDir, base, posts, sitemapPaths);
     checkClassless(outDir, written);
