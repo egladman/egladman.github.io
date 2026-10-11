@@ -1,9 +1,8 @@
 ---
-layout="_layouts/default.html"
-title="Blog"
+layout: _layouts/default.html
+title: Blog
+description: Posts on hardware, retro modding and programming.
 ---
-
-<h1>All Posts</h1>
-<section>
-  {{! __posts_all__ }}
-</section>
+<h1>blog</h1>
+{{{ posts }}}
+<p><a href="{{ base_url }}{{ pagination_url }}/tags/">all tags</a></p>
