@@ -67,6 +67,7 @@ object Page {
     reading: str = "",
     tagsHtml: str = "",
     pager: str = "",
+    trail: str = "",
 }
 
 // parseConfig reads squib.ini into flat section_key variables. A value's surrounding quotes
@@ -324,6 +325,9 @@ fun renderPage(page: Page, base: {str: str}, partials: {str: str}) > void !> any
     ctx["tags_html"] = page.tagsHtml;
     ctx["pager"] = page.pager;
     ctx["content"] = "";
+    ctx["breadcrumb"] = page.trail;
+    final blogDir = (base["pagination_url"] ?? "").sub(1) + "/";
+    ctx["blog_current"] = if (page.path.startsWith(blogDir)) " aria-current=\"true\"" else "";
 
     final layoutSrc = fs\readFile(page.layout);
     checkTags(layoutSrc, ctx, partials, page.layout);
@@ -455,6 +459,39 @@ fun dropFootnoteClasses(html: str) > str {
     var r = html;
     foreach (c in FOOTNOTE_CLASSES) { r = r.replace(c, ""); }
     return r;
+}
+
+// breadcrumb renders the trail under the header. items alternate label and url; the last
+// item is the current page and has no url.
+fun breadcrumb(items: [str]) > str {
+    var lis = "";
+    var i = 0;
+    while (i < items.len()) {
+        final label = escapeXml(items[i]);
+        final url = items[i + 1];
+        lis = lis + (if (url == "") "<li aria-current=\"page\">" + label + "</li>\n"
+                     else "<li><a href=\"" + escapeXml(url) + "\">" + label + "</a></li>\n");
+        i = i + 2;
+    }
+    return "<nav aria-label=\"Breadcrumb\">\n<ol>\n" + lis + "</ol>\n</nav>";
+}
+
+fun homeURL(base: {str: str}) > str {
+    return (base["base_url"] ?? "") + "/";
+}
+
+fun blogURL(base: {str: str}) > str {
+    return (base["base_url"] ?? "") + (base["pagination_url"] ?? "") + "/";
+}
+
+// pageTrail is the breadcrumb for a top-level page: none for the home page and the 404,
+// home / blog for the blog index, otherwise home / title.
+fun pageTrail(rel: str, title: str, base: {str: str}) > str {
+    if (rel == "index.html" or rel == "404.html") { return ""; }
+    if (rel == (base["pagination_url"] ?? "").sub(1) + "/index.html") {
+        return breadcrumb(["home", homeURL(base), "blog", ""]);
+    }
+    return breadcrumb(["home", homeURL(base), title, ""]);
 }
 
 // attr reads one attribute's value out of a single HTML tag.
@@ -649,6 +686,7 @@ export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
             dest = fs\join(outDir, rel),
             path = rel,
             layout = if (doc.layout == "") "_layouts/default.html" else doc.layout,
+            trail = pageTrail(rel, doc.title, base),
             title = doc.title,
             description = doc.description,
             body = body,
@@ -675,6 +713,9 @@ export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
             reading = "{p.minutes} min read",
             tagsHtml = tagLinks(p.tags, base),
             pager = pagerFor(posts, idx, base),
+            trail = breadcrumb([
+                "home", homeURL(base), "blog", blogURL(base), p.title, "",
+            ]),
         }, base, partials);
         written.append(p.path + "index.html");
         sitemapPaths.append(p.path);
@@ -699,6 +740,10 @@ export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
             path = path,
             layout = "_layouts/default.html",
             title = "tag: " + t,
+            trail = breadcrumb([
+                "home", homeURL(base), "blog", blogURL(base),
+                "tags", blogURL(base) + "tags/", t, "",
+            ]),
             description = "Posts tagged " + t + ".",
             body = "<h1>tag: " + escapeXml(t) + "</h1>\n" + postList(tagged, base),
         }, base, partials);
@@ -712,6 +757,9 @@ export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
         path = tagsPath,
         layout = "_layouts/default.html",
         title = "tags",
+        trail = breadcrumb([
+            "home", homeURL(base), "blog", blogURL(base), "tags", "",
+        ]),
         description = "Every tag used on the blog.",
         body = "<h1>tags</h1>\n<ul>\n" + tagItems + "</ul>",
     }, base, partials);
