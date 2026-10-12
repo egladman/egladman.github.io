@@ -5,7 +5,7 @@ namespace colors;
 
 import "std";
 
-// AAA for body-size text, AA for links and the prompt mark, 3:1 for decoration like rules.
+// AAA for body-size text, AA for links and the prompt mark, 3:1 for decoration like rules and brackets.
 final TEXT = 7.0;
 final LINK = 4.5;
 final LINE = 3.0;
@@ -32,6 +32,7 @@ final DARK = Theme{
         Role{ name = "seen", hex = "#b9a2dc", minContrast = LINK },
         Role{ name = "prompt", hex = "#4ae04a", minContrast = LINK },
         Role{ name = "rule", hex = "#5a5a5a", minContrast = LINE },
+        Role{ name = "mute", hex = "#7a7a7a", minContrast = LINE },
     ],
 };
 
@@ -39,12 +40,13 @@ final LIGHT = Theme{
     name = "light",
     background = "#ffffff",
     roles = [
-        Role{ name = "fg", hex = "#000000", minContrast = TEXT },
+        Role{ name = "fg", hex = "#1a1a1a", minContrast = TEXT },
         Role{ name = "dim", hex = "#454545", minContrast = TEXT },
         Role{ name = "link", hex = "#2f6bb3", minContrast = LINK },
         Role{ name = "seen", hex = "#7a4fa3", minContrast = LINK },
         Role{ name = "prompt", hex = "#0a6b1a", minContrast = LINK },
         Role{ name = "rule", hex = "#777777", minContrast = LINE },
+        Role{ name = "mute", hex = "#8f8f8f", minContrast = LINE },
     ],
 };
 
