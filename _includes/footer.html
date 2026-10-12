@@ -5,4 +5,24 @@
 <li><a href="{{ base_url }}/feed.xml" rel="alternate" type="application/atom+xml">blog feed</a></li>
 </ul>
 </nav>
+<fieldset>
+<legend>theme:</legend>
+<label title="change theme"><input type="radio" name="theme" value="system" aria-label="system" checked>dark</label>
+<label title="change theme"><input type="radio" name="theme" value="light" aria-label="light">system</label>
+<label title="change theme"><input type="radio" name="theme" value="dark" aria-label="dark">light</label>
+</fieldset>
+<script>
+document.querySelectorAll('input[name="theme"]').forEach(function (input) {
+  input.checked = input.value === (document.documentElement.dataset.theme || "system");
+  input.addEventListener("change", function () {
+    var root = document.documentElement;
+    if (input.value === "system") delete root.dataset.theme;
+    else root.dataset.theme = input.value;
+    try {
+      if (input.value === "system") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", input.value);
+    } catch (e) {}
+  });
+});
+</script>
 </footer>

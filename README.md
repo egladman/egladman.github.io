@@ -1,6 +1,6 @@
 # My Personal Blog
 
-Classless CSS. No Javascript. Written in Buzz.
+Classless CSS. Written in Buzz. The only JavaScript remembers the theme you pick.
 
 ### Dependencies
 

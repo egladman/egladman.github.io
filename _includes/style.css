@@ -60,3 +60,14 @@ summary>h2::after{content:"+" / "";order:2;color:var(--link);font-weight:400;let
 details[open]>summary>h2::after{content:"-" / ""}
 summary::after{content:"]" / "";color:var(--mute)}
 @media(prefers-reduced-motion:no-preference){:root{interpolate-size:allow-keywords}details::details-content{height:0;overflow:clip;transition:height .15s ease-out,content-visibility .15s allow-discrete}details[open]::details-content{height:auto}}
+:root:has(input[name=theme][value=light]:checked),:root[data-theme=light]{color-scheme:light}
+:root:has(input[name=theme][value=dark]:checked),:root[data-theme=dark]{color-scheme:dark}
+body>footer fieldset{display:flex;align-items:baseline;gap:0 1ch;border:0;margin:0;padding:0}
+body>footer legend{float:left;padding:0}
+label:has([name=theme]){position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;cursor:pointer;color:var(--link)}
+label:has([name=theme]:checked)+label,fieldset:has([name=theme][value=dark]:checked)>label:first-of-type{position:static;width:auto;height:auto;overflow:visible;clip-path:none}
+label:has([name=theme]):hover{text-decoration:underline}
+label:has([name=theme])::before{content:"[" / "";display:inline-block;color:var(--mute)}
+label:has([name=theme])::after{content:"…]" / "";display:inline-block;color:var(--mute)}
+fieldset:has([name=theme]:focus-visible)>label{outline:2px solid var(--fg);outline-offset:2px}
+input[name=theme]{position:absolute;width:1px;height:1px;margin:0;opacity:0}
