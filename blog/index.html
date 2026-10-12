@@ -3,6 +3,13 @@ layout: _layouts/default.html
 title: Blog
 description: Posts on hardware, retro modding and programming.
 ---
-<h1>blog</h1>
+<h1>posts</h1>
 {{{ posts }}}
-<p><a href="{{ base_url }}{{ pagination_url }}/tags/">all tags</a></p>
+<section>
+<h2>tags</h2>
+<nav aria-label="Tags">
+<ul>
+{{{ tag_links }}}
+</ul>
+</nav>
+</section>

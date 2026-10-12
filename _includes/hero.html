@@ -1,28 +1,26 @@
 <section>
-<h1>Hello</h1>
-{{{ content_intro }}}
-<nav aria-label="Elsewhere">
+<h1>hello</h1>
+<p>My name is <b>{{ contact_first_name }}</b>. I'm a software engineer at Immuta.</p>
+<p>Bad software drives me up the wall, and it's never been easier to write. I strive for well-architected code the next person can follow, even when that person is me six months later.
+Go is my language of choice.
+I'm a huge advocate for open source (free as in freedom, not just free as in beer), whether that's software or hardware.</p>
+</section>
+<section>
+<h2>recent projects</h2>
 <ul>
-<li><a href="{{ url_github }}">github</a></li>
-<li><a href="mailto:{{ contact_email }}">email</a></li>
+<li><a href="https://eli.gladman.cc/magus/">magus</a><small>My build tool. I wrote it because I got tired of fighting the ones I had. It's designed with monorepos in mind. <a href="https://github.com/egladman/magus">source code</a></small></li>
 </ul>
-</nav>
 </section>
 <section>
-<h2>magus</h2>
-<p>A fast task orchestrator for polyglot monorepos. Targets are programs, not YAML.<br>
-<a href="https://eli.gladman.cc/magus/">website</a> | <a href="https://github.com/egladman/magus">source</a></p>
-</section>
-<section>
+<header>
 <h2>recent posts</h2>
+<a href="{{ base_url }}{{ pagination_url }}/" title="all posts">more</a>
+</header>
 {{{ recent_posts }}}
-<p><a href="{{ base_url }}{{ pagination_url }}/">all posts</a></p>
 </section>
 <section>
-<h2>tags</h2>
-<nav aria-label="Tags">
-<ul>
-{{{ tag_links }}}
-</ul>
-</nav>
+<details>
+<summary><h2>contact me</h2></summary>
+<p>Email me at <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.</p>
+</details>
 </section>

@@ -7,7 +7,7 @@ import "render" as renderer;
 
 magus\project({
     "sources": ["*.html", "blog/**", "_includes/**", "_layouts/**", "_posts/**", "_public/**",
-                "squib.ini", "render.buzz", "images.buzz", "colors.buzz", "stylelint.config.mjs", "_typos.toml", "README.md"],
+                "render.buzz", "images.buzz", "colors.buzz", "stylelint.config.mjs", "_typos.toml", "README.md"],
     "targets": {
         "colors-report": {"skip_cache": "prints to the console, so a replay would print nothing"},
         "build": {"skip_cache": "reads the HEAD commit date to hold back future-dated posts, which file hashing cannot see"},
@@ -15,7 +15,20 @@ magus\project({
 });
 
 final OUT = "_site";
-final CONFIG = "squib.ini";
+
+// Template variables every page can read as {{ key }}.
+final FIRST_NAME = "Eli";
+final LAST_NAME = "Gladman";
+final SITE = {
+    "site_url": "eli.gladman.cc",
+    "base_url": "",
+    "pagination_url": "/blog",
+    "url_github": "https://github.com/egladman",
+    "contact_first_name": FIRST_NAME,
+    "contact_last_name": LAST_NAME,
+    "contact_full_name": FIRST_NAME + " " + LAST_NAME,
+    "contact_email": "eli@gladman.cc",
+};
 
 // images-generate shrinks anything over IMAGE_LIMIT or IMAGE_MAX_WIDTH; build refuses
 // anything still over IMAGE_LIMIT.
@@ -25,13 +38,13 @@ final IMAGE_QUALITY = 82;
 
 export fun build(ctx: magus\Context, args: [str]) > void !> any {
     ctx.writesFiles("_site/**");
-    renderer\build(OUT, CONFIG, IMAGE_LIMIT);
+    renderer\build(OUT, SITE, IMAGE_LIMIT);
 }
 
 // lint enforces the classless stylesheet and checks spelling; build enforces classless markup.
 export fun lint(ctx: magus\Context, args: [str]) > void !> any {
     ctx.readsFiles("_includes/*.css", "stylelint.config.mjs", "_typos.toml", "README.md", "*.html",
-                   "*.buzz", "squib.ini", "_includes/*", "_layouts/*", "_posts/*.md", "blog/*.html");
+                   "*.buzz", "_includes/*", "_layouts/*", "_posts/*.md", "blog/*.html");
     proc\exec("stylelint", ["_includes/*.css"]);
     proc\exec("typos", ["--format", "brief"]);
 }
@@ -39,7 +52,7 @@ export fun lint(ctx: magus\Context, args: [str]) > void !> any {
 // typos-fix rewrites known misspellings in place. It is separate from lint on purpose:
 // an autofix can turn an identifier into a different word, so read the diff before committing.
 export fun typos_fix(ctx: magus\Context, args: [str]) > void !> any {
-    ctx.modifiesExistingFiles("README.md", "*.html", "*.buzz", "squib.ini", "_includes/*", "_layouts/*",
+    ctx.modifiesExistingFiles("README.md", "*.html", "*.buzz", "_includes/*", "_layouts/*",
                               "_posts/*.md", "blog/*.html");
     proc\exec("typos", ["--format", "brief", "-w"]);
 }
