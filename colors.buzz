@@ -10,45 +10,32 @@ final TEXT = 7.0;
 final LINK = 4.5;
 final LINE = 3.0;
 
+// Role carries both themes' values side by side, so a color is set in one place and the
+// CSS picks the half that matches the reader's color scheme.
 object Role {
     name: str = "",
-    hex: str = "",
+    light: str = "",
+    dark: str = "",
     minContrast: double = 0.0,
 }
 
-object Theme {
-    name: str = "",
-    background: str = "",
-    roles: [Role],
+// Off-white and near-black instead of #ffffff and #000000: the pure extremes glare in light
+// mode and halate in dark mode, where bright text seems to bleed into the background.
+final BACKGROUND = Role{ name = "bg", light = "#fafafa", dark = "#121212" };
+
+final ROLES = [
+    Role{ name = "fg", light = "#1a1a1a", dark = "#ececec", minContrast = TEXT },
+    Role{ name = "dim", light = "#454545", dark = "#a8a8a8", minContrast = TEXT },
+    Role{ name = "link", light = "#2f6bb3", dark = "#8ab4e8", minContrast = LINK },
+    Role{ name = "seen", light = "#7a4fa3", dark = "#b9a2dc", minContrast = LINK },
+    Role{ name = "prompt", light = "#0a6b1a", dark = "#4ae04a", minContrast = LINK },
+    Role{ name = "rule", light = "#777777", dark = "#636363", minContrast = LINE },
+    Role{ name = "mute", light = "#8f8f8f", dark = "#7a7a7a", minContrast = LINE },
+];
+
+fun pick(role: Role, theme: str) > str {
+    return if (theme == "light") role.light else role.dark;
 }
-
-final DARK = Theme{
-    name = "dark",
-    background = "#000000",
-    roles = [
-        Role{ name = "fg", hex = "#ececec", minContrast = TEXT },
-        Role{ name = "dim", hex = "#a8a8a8", minContrast = TEXT },
-        Role{ name = "link", hex = "#8ab4e8", minContrast = LINK },
-        Role{ name = "seen", hex = "#b9a2dc", minContrast = LINK },
-        Role{ name = "prompt", hex = "#4ae04a", minContrast = LINK },
-        Role{ name = "rule", hex = "#5a5a5a", minContrast = LINE },
-        Role{ name = "mute", hex = "#7a7a7a", minContrast = LINE },
-    ],
-};
-
-final LIGHT = Theme{
-    name = "light",
-    background = "#ffffff",
-    roles = [
-        Role{ name = "fg", hex = "#1a1a1a", minContrast = TEXT },
-        Role{ name = "dim", hex = "#454545", minContrast = TEXT },
-        Role{ name = "link", hex = "#2f6bb3", minContrast = LINK },
-        Role{ name = "seen", hex = "#7a4fa3", minContrast = LINK },
-        Role{ name = "prompt", hex = "#0a6b1a", minContrast = LINK },
-        Role{ name = "rule", hex = "#777777", minContrast = LINE },
-        Role{ name = "mute", hex = "#8f8f8f", minContrast = LINE },
-    ],
-};
 
 fun hexDigit(c: int) > int {
     if (c >= 48 and c <= 57) { return c - 48; }
@@ -104,14 +91,16 @@ fun tenths(x: double) > str {
     return "{t / 10}.{t - (t / 10) * 10}";
 }
 
-// report lists every role's contrast against its theme's background and flags failures.
+// report lists every role's contrast against the background in each theme and flags failures.
 export fun report() > [str] !> any {
     final lines: mut [str] = mut [<str>];
-    foreach (theme in [DARK, LIGHT]) {
-        foreach (role in theme.roles) {
-            final ratio = contrast(role.hex, theme.background);
+    foreach (theme in ["light", "dark"]) {
+        final background = pick(BACKGROUND, theme);
+        foreach (role in ROLES) {
+            final hex = pick(role, theme);
+            final ratio = contrast(hex, background);
             final verdict = if (ratio >= role.minContrast) "ok" else "FAILS";
-            lines.append("{theme.name} {role.name} {role.hex} {tenths(ratio)}:1 needs {tenths(role.minContrast)}:1 {verdict}");
+            lines.append("{theme} {role.name} {hex} {tenths(ratio)}:1 needs {tenths(role.minContrast)}:1 {verdict}");
         }
     }
     return lines;
@@ -126,14 +115,14 @@ export fun verify() > void !> any {
     if (failing.len() > 0) { throw "palette misses its contrast targets:\n" + failing.join("\n"); }
 }
 
-fun declarations(theme: Theme) > str {
-    var props = "--bg:" + theme.background + ";";
-    foreach (role in theme.roles) { props = props + "--" + role.name + ":" + role.hex + ";"; }
-    return props;
+fun declaration(role: Role) > str {
+    return "--" + role.name + ":light-dark(" + role.light + "," + role.dark + ");";
 }
 
-// css renders the palette: dark by default, light under the system preference.
+// css renders each role once with light-dark(). A browser without light-dark() drops the
+// colors and falls back to its own defaults, which stay readable.
 export fun css() > str {
-    return ":root\{color-scheme:dark light;" + declarations(DARK) + "}\n"
-        + "@media(prefers-color-scheme:light)\{:root\{" + declarations(LIGHT) + "}}\n";
+    var props = declaration(BACKGROUND);
+    foreach (role in ROLES) { props = props + declaration(role); }
+    return ":root\{color-scheme:light dark;" + props + "}\n";
 }
