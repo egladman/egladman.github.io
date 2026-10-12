@@ -71,74 +71,6 @@ object Page {
     trail: str = "",
 }
 
-// parseConfig reads squib.ini into flat section_key variables. A value's surrounding quotes
-// are dropped, a trailing backslash continues it on the next line, and ';' starts a comment.
-// [squib] keys also answer to their bare name (base_url, site_url).
-fun parseConfig(path: str) > mut {str: str} !> any {
-    final vars: mut {str: str} = mut {};
-    var section = "";
-    var key = "";
-    var value = "";
-    var open = false;
-
-    foreach (raw in fs\readFile(path).split("\n")) {
-        final line = raw.trim();
-        if (open) {
-            value = value + stripContinuation(line);
-            open = line.endsWith("\\");
-        } else {
-            if (line == "" or line.startsWith(";") or line.startsWith("#")) { continue; }
-            if (line.startsWith("[") and line.endsWith("]")) {
-                section = line.sub(1, len: line.len() - 2);
-                continue;
-            }
-            final eq = line.indexOf("=");
-            if (eq == null) { continue; }
-            key = line.sub(0, eq).trim();
-            final rest = line.sub(eq + 1).trim();
-            value = stripContinuation(rest);
-            open = rest.endsWith("\\");
-        }
-        if (!open) {
-            vars[section + "_" + key] = unquote(value);
-            if (section == "squib") { vars[key] = unquote(value); }
-        }
-    }
-    return vars;
-}
-
-fun stripContinuation(s: str) > str {
-    if (s.endsWith("\\")) { return s.sub(0, s.len() - 1); }
-    return s;
-}
-
-fun unquote(s: str) > str {
-    var r = s.trim();
-    if (r.len() >= 2 and r.startsWith("\"") and r.endsWith("\"")) {
-        r = r.sub(1, len: r.len() - 2);
-    }
-    return r;
-}
-
-// resolveConfig renders config values that reference other values. Each pass resolves one
-// level of nesting; the cap turns a reference cycle into an error instead of a hang.
-fun resolveConfig(vars: mut {str: str}) > void !> any {
-    var pass = 0;
-    while (pass < 5) {
-        var changed = false;
-        foreach (k in vars.keys()) {
-            final v = vars[k] ?? "";
-            if (v.indexOf(OPEN) != null) {
-                vars[k] = template\render(v, vars);
-                changed = true;
-            }
-        }
-        if (!changed) { return; }
-        pass = pass + 1;
-    }
-    throw "config values reference each other in a cycle";
-}
-
 // loadDoc reads a file's YAML front matter. A YAML date decodes as RFC3339; only the
 // calendar day is kept. tags may be a list or a space-separated string.
 fun loadDoc(path: str) > Doc !> any {
@@ -635,9 +567,10 @@ fun writeFeeds(outDir: str, base: {str: str}, posts: [Post], sitemapPaths: [str]
 }
 
 // build renders the site in the working directory into outDir, replacing whatever was there.
-export fun build(outDir: str, config: str, imageLimit: int) > void !> any {
-    final base = parseConfig(config);
-    resolveConfig(base);
+// vars are the site-wide template variables; build copies them and adds its own.
+export fun build(outDir: str, vars: {str: str}, imageLimit: int) > void !> any {
+    final base: mut {str: str} = mut {};
+    foreach (k, v in vars) { base[k] = v; }
     base["site_origin"] = "https://" + (base["site_url"] ?? "");
     if ((base["site_description"] ?? "") == "") {
         base["site_description"] = "Personal website for " + (base["contact_full_name"] ?? "");
