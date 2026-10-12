@@ -68,6 +68,6 @@ label:has([name=theme]){position:absolute;width:1px;height:1px;overflow:hidden;c
 label:has([name=theme]:checked)+label,fieldset:has([name=theme][value=dark]:checked)>label:first-of-type{position:static;width:auto;height:auto;overflow:visible;clip-path:none}
 label:has([name=theme]):hover{text-decoration:underline}
 label:has([name=theme])::before{content:"[" / "";display:inline-block;color:var(--mute)}
-label:has([name=theme])::after{content:"]" / "";display:inline-block;color:var(--mute)}
+label:has([name=theme])::after{content:"…]" / "";display:inline-block;color:var(--mute)}
 fieldset:has([name=theme]:focus-visible)>label{outline:2px solid var(--fg);outline-offset:2px}
 input[name=theme]{position:absolute;width:1px;height:1px;margin:0;opacity:0}
