@@ -30,7 +30,7 @@ Context is shared too, and in a monorepo nobody owns it. Anyone can add a skill 
 
 ## Old problems, new names
 
-For most implementation work you don't need a smarter model. You need a better harness, and by harness I mean the feedback loop around the model. Most of what gets sold as prompt engineering or graph engineering is an old computer science problem with a new name.
+For most implementation work you don't need a smarter model. You need a better harness, and by harness I mean the feedback loop around the model. Software that fights its users (inconsistent behavior, broken conventions, errors that tell you nothing) fights an agent the same way, so fixing it pays off twice. It starts with knowing who your users are. If you build developer tools, your users are technical, so give them an error they can act on, not "oops, something broke." Most of what gets sold as prompt engineering or graph engineering is an old computer science problem with a new name.
 
 The best harness I've built is pointing magus at my own session data. Each agent transcript, read against magus's own trail, shows where magus stopped something and where it should have and didn't. I have an agent read those transcripts, fix what they show, and run it again. It's the fastest loop I've had on any project.
 
