@@ -293,8 +293,8 @@ fun postList(posts: [Post], base: {str: str}) > str {
     if (posts.len() == 0) { return "<p>No posts yet.</p>"; }
     var items = "";
     foreach (p in posts) {
-        items = items + "<li><time datetime=\"" + p.date + "\">" + p.date + "</time><a href=\""
-            + escapeXml((base["base_url"] ?? "") + "/" + p.path) + "\">" + escapeXml(p.title) + "</a></li>\n";
+        items = items + "<li><a href=\"" + escapeXml((base["base_url"] ?? "") + "/" + p.path) + "\">"
+            + escapeXml(p.title) + "</a><time datetime=\"" + p.date + "\">" + p.date + "</time></li>\n";
     }
     return "<ul>\n" + items + "</ul>";
 }
